@@ -1,0 +1,16 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+.idea/
+.vscode/
+dist/
+build/
+node_modules/
+certs/private/
+*.key
+*.p12
+*.jks

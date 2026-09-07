@@ -1,0 +1,121 @@
+openapi: 3.2.0
+info:
+  title: MayaBank Payment API
+  version: 1.0.0
+  description: Contract-first sample for the MayaBank API Management architecture.
+servers:
+  - url: https://api.sandbox.mayabank.example
+paths:
+  /payments:
+    post:
+      operationId: createPayment
+      summary: Create a payment
+      security:
+        - oauth2:
+            - payments.write
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            minLength: 16
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '201':
+          description: Payment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+  /payments/{paymentId}:
+    get:
+      operationId: getPayment
+      security:
+        - oauth2:
+            - payments.read
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '404':
+          $ref: '#/components/responses/Problem'
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://id.mayabank.example/authorize
+          tokenUrl: https://id.mayabank.example/token
+          scopes:
+            payments.read: Read payments
+            payments.write: Create payments
+  schemas:
+    PaymentRequest:
+      type: object
+      required: [debtorAccountId, creditorIban, amount]
+      properties:
+        debtorAccountId:
+          type: string
+        creditorIban:
+          type: string
+        amount:
+          $ref: '#/components/schemas/Money'
+    Payment:
+      type: object
+      required: [paymentId, status, amount]
+      properties:
+        paymentId:
+          type: string
+        status:
+          type: string
+          enum: [RECEIVED, ACCEPTED, REJECTED, SETTLED]
+        amount:
+          $ref: '#/components/schemas/Money'
+    Money:
+      type: object
+      required: [value, currency]
+      properties:
+        value:
+          type: string
+          pattern: '^[0-9]+(\.[0-9]{1,2})?$'
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        correlationId: { type: string }
+        detail: { type: string }
+  responses:
+    Problem:
+      description: Problem response
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'

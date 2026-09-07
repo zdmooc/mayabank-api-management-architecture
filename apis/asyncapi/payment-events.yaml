@@ -1,0 +1,43 @@
+asyncapi: '3.1.0'
+info:
+  title: MayaBank Payment Events
+  version: '1.0.0'
+  description: Event contract for payment lifecycle events.
+servers:
+  production:
+    host: kafka.mayabank.example:9093
+    protocol: kafka
+channels:
+  paymentEvents:
+    address: mayabank.payment.events.v1
+    messages:
+      paymentStatusChanged:
+        $ref: '#/components/messages/PaymentStatusChanged'
+operations:
+  publishPaymentStatus:
+    action: send
+    channel:
+      $ref: '#/channels/paymentEvents'
+    messages:
+      - $ref: '#/channels/paymentEvents/messages/paymentStatusChanged'
+components:
+  messages:
+    PaymentStatusChanged:
+      payload:
+        type: object
+        required:
+          - eventId
+          - paymentId
+          - status
+          - occurredAt
+        properties:
+          eventId:
+            type: string
+          paymentId:
+            type: string
+          status:
+            type: string
+            enum: [RECEIVED, ACCEPTED, REJECTED, SETTLED]
+          occurredAt:
+            type: string
+            format: date-time

@@ -2,6 +2,7 @@
 set -euo pipefail
 
 BASE_URL="${KEYCLOAK_EXTERNAL_URL:-http://localhost:8080}"
+RATE_LIMIT_PER_MINUTE="${RATE_LIMIT_PER_MINUTE:-120}"
 ISSUER="${BASE_URL}/realms/mayabank"
 
 REALM_JSON="$(curl -fsS "${BASE_URL}/realms/mayabank")"
@@ -16,7 +17,7 @@ PY
 )"
 
 mkdir -p runtime/e2e/generated
-ISSUER="${ISSUER}" PUBLIC_KEY="${PUBLIC_KEY}" python3 - <<'PY'
+ISSUER="${ISSUER}" PUBLIC_KEY="${PUBLIC_KEY}" RATE_LIMIT_PER_MINUTE="${RATE_LIMIT_PER_MINUTE}" python3 - <<'PY'
 from pathlib import Path
 import os
 
@@ -27,7 +28,8 @@ indented = "\n".join("          " + line for line in key.splitlines())
 
 rendered = (
     template.replace("__KEYCLOAK_ISSUER__", issuer)
-    .replace("__KEYCLOAK_PUBLIC_KEY_INDENTED__", indented)
+     .replace("__KEYCLOAK_PUBLIC_KEY_INDENTED__", indented)
+    .replace("__RATE_LIMIT_PER_MINUTE__", os.environ["RATE_LIMIT_PER_MINUTE"])
 )
 Path("runtime/e2e/generated/kong.yml").write_text(rendered, encoding="utf-8")
 print("KONG_DECLARATIVE_CONFIG_RENDER=PASS")

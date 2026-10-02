@@ -15,6 +15,7 @@ RUNTIME_EXPRESSIONS = (
     "$(",
     "${",
     "$",
+    "?set",
 )
 
 bad = []

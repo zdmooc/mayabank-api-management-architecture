@@ -32,7 +32,7 @@ services:
 
       - name: rate-limiting
         config:
-          minute: 120
+          minute: __RATE_LIMIT_PER_MINUTE__
           policy: local
 
       - name: request-size-limiting

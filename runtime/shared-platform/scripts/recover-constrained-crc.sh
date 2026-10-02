@@ -23,12 +23,11 @@ test "${DEPLOY_PAYMENT_CPU}" = "10m"
 PAYMENT_POD=""
 for _ in $(seq 1 60); do
   PAYMENT_POD="$(oc -n mayabank-api get pods -l app=payment-api --field-selector=status.phase=Running \
-    -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.containers[0].resources.requests.cpu}{"\\n"}{end}' \
-    | awk '$2=="10m"{print $1; exit}')"
-  if [[ -n "${PAYMENT_POD}" ]] && oc -n mayabank-api wait --for=condition=Ready "pod/${PAYMENT_POD}" --timeout=5s >/dev/null 2>&1; then
+    -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[0].resources.requests.cpu}{"\t"}{.status.containerStatuses[0].ready}{"\n"}{end}' \
+    | awk '$2=="10m" && $3=="true"{print $1; exit}')"
+  if [[ -n "${PAYMENT_POD}" ]]; then
     break
   fi
-  PAYMENT_POD=""
   sleep 2
 done
 
@@ -55,10 +54,9 @@ echo "KONG_DEPLOYMENT_CPU_REQUEST=${DEPLOY_KONG_CPU}"
 test "${DEPLOY_KONG_CPU}" = "25m"
 
 KONG_POD="$(oc -n mayabank-api get pods -l app=api-gateway --field-selector=status.phase=Running \
-  -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.containers[0].resources.requests.cpu}{"\\n"}{end}' \
-  | awk '$2=="25m"{print $1; exit}')"
+  -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[0].resources.requests.cpu}{"\t"}{.status.containerStatuses[0].ready}{"\n"}{end}' \
+  | awk '$2=="25m" && $3=="true"{print $1; exit}')"
 test -n "${KONG_POD}"
-oc -n mayabank-api wait --for=condition=Ready "pod/${KONG_POD}" --timeout=60s >/dev/null
 KONG_CPU="$(oc -n mayabank-api get "pod/${KONG_POD}" -o jsonpath='{.spec.containers[0].resources.requests.cpu}')"
 echo "KONG_READY_POD=${KONG_POD}"
 echo "KONG_CPU_REQUEST=${KONG_CPU}"

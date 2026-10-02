@@ -47,7 +47,24 @@ echo "== Re-render and restart Kong after CPU headroom release"
 bash runtime/shared-platform/scripts/render-kong-config.sh
 oc apply -f runtime/shared-platform/manifests/kong.yaml
 oc -n mayabank-api rollout restart deploy/api-gateway
-oc -n mayabank-api rollout status deploy/api-gateway --timeout=600s
+if ! oc -n mayabank-api rollout status deploy/api-gateway --timeout=600s; then
+  echo "== Kong recovery diagnostics"
+  oc -n mayabank-api get deploy,rs,pods,svc,route -o wide || true
+  oc -n mayabank-api describe deploy/api-gateway || true
+  oc -n mayabank-api describe pods -l app=api-gateway || true
+  KONG_DIAG_POD="$(oc -n mayabank-api get pods -l app=api-gateway -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
+  if [[ -n "${KONG_DIAG_POD}" ]]; then
+    echo "== Kong current logs"
+    oc -n mayabank-api logs "${KONG_DIAG_POD}" --tail=200 || true
+    echo "== Kong previous logs"
+    oc -n mayabank-api logs "${KONG_DIAG_POD}" --previous --tail=200 || true
+  fi
+  echo "== Node allocation"
+  oc describe node crc | sed -n '/Allocated resources:/,/Events:/p' || true
+  echo "== Recent namespace events"
+  oc -n mayabank-api get events --sort-by=.lastTimestamp | tail -n 160 || true
+  exit 1
+fi
 
 DEPLOY_KONG_CPU="$(oc -n mayabank-api get deploy/api-gateway -o jsonpath='{.spec.template.spec.containers[0].resources.requests.cpu}')"
 echo "KONG_DEPLOYMENT_CPU_REQUEST=${DEPLOY_KONG_CPU}"

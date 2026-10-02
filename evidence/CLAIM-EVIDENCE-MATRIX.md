@@ -12,14 +12,22 @@
 | HLD | REFERENCE_DESIGN | `architecture/HLD.md` |
 | LLD | IMPLEMENTATION_CONTRACT | `architecture/LLD.md` |
 | UML component/sequence/deployment | STATIC_VALIDATED | `diagrams/uml/` + architecture deliverables CI gate |
-| OpenShift Payment API manifest | STATIC_ASSET | `manifests/openshift/payment-api.yaml` |\n| Shared-platform CRC profile | STATIC_VALIDATED | `runtime/shared-platform/` + validate-contracts CI |\n| Shared OIDC consumption on CRC | NOT_PROVEN | runtime execution pending |\n| Kong → shared OTel traces on CRC | NOT_PROVEN | runtime execution pending |
-| Kong gateway runtime | CI_RUNTIME_PROVEN_E2E | run `36984578912` |
-| Keycloak integration in this repo | CI_RUNTIME_PROVEN_E2E | Keycloak 26.8.0, run `36984578912` |
-| OAuth2 client_credentials | CI_RUNTIME_PROVEN_E2E | audience + scopes observed, run `36984578912` |
+| OpenShift Payment API manifest | STATIC_ASSET | `manifests/openshift/payment-api.yaml` |
+| Shared-platform CRC profile | STATIC_VALIDATED | `runtime/shared-platform/` + validate-contracts CI |
+| Shared OIDC consumption on CRC | NOT_PROVEN | runtime execution pending |
+| Kong → shared OTel traces on CRC | NOT_PROVEN | runtime execution pending |
+| Kong gateway runtime | CI_RUNTIME_PROVEN_E2E | run `36996509086` |
+| Keycloak integration in standalone CI | CI_RUNTIME_PROVEN_E2E | Keycloak 26.8.0, run `36996509086` |
+| OAuth2 client_credentials | CI_RUNTIME_PROVEN_E2E | audience + scopes observed, run `36996509086` |
 | JWT negative controls | CI_RUNTIME_PROVEN_E2E | missing token + invalid signature rejected |
+| Insufficient scope behavior | CI_RUNTIME_PROVEN_E2E | HTTP 403 observed |
+| Wrong audience behavior | CI_RUNTIME_PROVEN_E2E | HTTP 401 observed |
+| Request-size limiting | CI_RUNTIME_PROVEN_E2E | HTTP 413 observed |
+| Rate limiting | CI_RUNTIME_PROVEN_E2E | HTTP 429 observed with reduced CI-only threshold |
 | Payment API via gateway | CI_RUNTIME_PROVEN_E2E | create/read through Kong |
 | Idempotency | CI_RUNTIME_PROVEN_E2E | deterministic replay observed |
 | Correlation ID | CI_RUNTIME_PROVEN_E2E | gateway response header observed |
+| Expired-token behavioral test | NOT_PROVEN | dedicated expiry case not yet executed |
 | Kafka runtime in this repo | NOT_PROVEN | LAB-09 pending |
 | OpenShift runtime | NOT_PROVEN | shared-platform CRC execution pending; LAB-07 remains manual |
 | Full target architecture E2E | NOT_PROVEN | Kafka/OpenShift/HA not included in current CI proof |
@@ -28,12 +36,12 @@
 ## Primary runtime evidence
 
 - `evidence/ci/API-MANAGEMENT-E2E-2026-10-02.md`
-- GitHub Actions run `36984578912` — SUCCESS
-- commit `51424944ca46758b0e20896e6d4dd995727c44d5`
+- GitHub Actions run `36996509086` — SUCCESS
+- commit `7b9f7d7feb7297c1e50ad99992e4d03045173e86`
 
 ## Portfolio linkage
 
-Deep Keycloak/IAM runtime evidence also exists in `zdmooc/keycloak-enterprise-roadmap-v7`. The successful E2E run above is owned by this repository and is therefore valid evidence for the bounded Kong + Keycloak + Payment API integration.
+Deep Keycloak/IAM runtime evidence also exists in `zdmooc/keycloak-enterprise-roadmap-v7`. The successful standalone E2E run above is owned by this repository and is valid evidence for the bounded Kong + Keycloak + Payment API integration.
 
 ## Promotion rule
 
@@ -45,7 +53,6 @@ A capability moves to a runtime-proven level only when:
 5. relevant ADRs are updated if execution changes the design.
 
 Runtime proof is scoped: proving the bounded CI chain does not prove OpenShift, Kafka, HA or production readiness.
-
 
 ## Shared-platform target evidence gate
 

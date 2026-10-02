@@ -84,3 +84,13 @@ API_MANAGEMENT_SHARED_PLATFORM_CRC=PASS
 Evidence: `evidence/crc/API-MANAGEMENT-SHARED-PLATFORM-CRC-2026-10-02.md`.
 
 CRC-specific compact requests and the one-worker Kong setting are local-lab constraints only and must not be reused as production sizing.
+
+
+## Closure status
+
+**CLOSED on 2026-10-02** for the single-node CRC proof scope.
+
+Primary closure record:
+`evidence/crc/SHARED-PLATFORM-CLOSURE-2026-10-02.md`.
+
+Further expansion is mission-driven and must not weaken the evidence boundary.

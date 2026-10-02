@@ -1,0 +1,23 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: payment-api
+  namespace: mayabank-api
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: payment-api
+  namespace: mayabank-api
+spec:
+  source:
+    type: Binary
+    binary: {}
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: payment-api:latest

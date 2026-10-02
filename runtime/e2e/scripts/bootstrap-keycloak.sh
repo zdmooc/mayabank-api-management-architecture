@@ -3,6 +3,8 @@ set -euo pipefail
 
 : "${KC_BOOTSTRAP_ADMIN_PASSWORD:?set KC_BOOTSTRAP_ADMIN_PASSWORD}"
 : "${PAYMENT_CLIENT_SECRET:?set PAYMENT_CLIENT_SECRET}"
+: "${READ_ONLY_CLIENT_SECRET:?set READ_ONLY_CLIENT_SECRET}"
+: "${WRONG_AUDIENCE_CLIENT_SECRET:?set WRONG_AUDIENCE_CLIENT_SECRET}"
 
 BASE_URL="${KEYCLOAK_EXTERNAL_URL:-http://localhost:8080}"
 
@@ -98,6 +100,55 @@ admin_json POST "/admin/realms/mayabank/clients/${PAYMENT_CLIENT_UUID}/protocol-
       "access.token.claim":"true"
     }
   }'
+
+
+READ_ONLY_SECRET="${READ_ONLY_CLIENT_SECRET}" python3 - <<'PY' >/tmp/read-only-client.json
+import json, os
+print(json.dumps({
+    "clientId": "read-only-client",
+    "enabled": True,
+    "protocol": "openid-connect",
+    "publicClient": False,
+    "secret": os.environ["READ_ONLY_SECRET"],
+    "serviceAccountsEnabled": True,
+    "fullScopeAllowed": False,
+    "standardFlowEnabled": False,
+    "directAccessGrantsEnabled": False
+}))
+PY
+admin_json POST /admin/realms/mayabank/clients "$(cat /tmp/read-only-client.json)"
+READ_ONLY_UUID="$(admin_get '/admin/realms/mayabank/clients?clientId=read-only-client' | jq -r '.[0].id')"
+READ_SCOPE_ID="$(admin_get '/admin/realms/mayabank/client-scopes' | jq -r '.[] | select(.name == "payments.read") | .id')"
+code="$(curl -sS -o /tmp/read-scope-link.out -w '%{http_code}' -X PUT "${BASE_URL}/admin/realms/mayabank/clients/${READ_ONLY_UUID}/default-client-scopes/${READ_SCOPE_ID}" -H "Authorization: Bearer ${ADMIN_TOKEN}")"
+test "${code}" = "204"
+admin_json POST "/admin/realms/mayabank/clients/${READ_ONLY_UUID}/protocol-mappers/models" '{
+  "name":"payment-api-audience",
+  "protocol":"openid-connect",
+  "protocolMapper":"oidc-audience-mapper",
+  "config":{"included.client.audience":"payment-api","access.token.claim":"true"}
+}'
+
+WRONG_AUD_SECRET="${WRONG_AUDIENCE_CLIENT_SECRET}" python3 - <<'PY' >/tmp/wrong-audience-client.json
+import json, os
+print(json.dumps({
+    "clientId": "wrong-audience-client",
+    "enabled": True,
+    "protocol": "openid-connect",
+    "publicClient": False,
+    "secret": os.environ["WRONG_AUD_SECRET"],
+    "serviceAccountsEnabled": True,
+    "fullScopeAllowed": False,
+    "standardFlowEnabled": False,
+    "directAccessGrantsEnabled": False
+}))
+PY
+admin_json POST /admin/realms/mayabank/clients "$(cat /tmp/wrong-audience-client.json)"
+WRONG_AUD_UUID="$(admin_get '/admin/realms/mayabank/clients?clientId=wrong-audience-client' | jq -r '.[0].id')"
+for scope in payments.write payments.read; do
+  SCOPE_ID="$(admin_get '/admin/realms/mayabank/client-scopes' | jq -r --arg n "${scope}" '.[] | select(.name == $n) | .id')"
+  code="$(curl -sS -o /tmp/wrong-scope-link.out -w '%{http_code}' -X PUT "${BASE_URL}/admin/realms/mayabank/clients/${WRONG_AUD_UUID}/default-client-scopes/${SCOPE_ID}" -H "Authorization: Bearer ${ADMIN_TOKEN}")"
+  test "${code}" = "204"
+done
 
 unset ADMIN_TOKEN
 echo "KEYCLOAK_E2E_BOOTSTRAP=PASS"

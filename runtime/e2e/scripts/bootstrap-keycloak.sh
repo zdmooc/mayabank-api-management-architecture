@@ -46,7 +46,15 @@ admin_json POST /admin/realms   '{"realm":"mayabank","enabled":true,"registratio
 admin_json POST /admin/realms/mayabank/clients   '{"clientId":"payment-api","enabled":true,"protocol":"openid-connect","publicClient":true,"standardFlowEnabled":false,"directAccessGrantsEnabled":false,"serviceAccountsEnabled":false}'
 
 for scope in payments.write payments.read; do
-  admin_json POST /admin/realms/mayabank/client-scopes     "{"name":"${scope}","protocol":"openid-connect","attributes":{"include.in.token.scope":"true"}}"
+  SCOPE_NAME="${scope}" python3 - <<'PY' >/tmp/client-scope.json
+import json, os
+print(json.dumps({
+    "name": os.environ["SCOPE_NAME"],
+    "protocol": "openid-connect",
+    "attributes": {"include.in.token.scope": "true"},
+}))
+PY
+  admin_json POST /admin/realms/mayabank/client-scopes "$(cat /tmp/client-scope.json)"
 done
 
 PAYMENT_SECRET="${PAYMENT_CLIENT_SECRET}" python3 - <<'PY' >/tmp/payment-client.json

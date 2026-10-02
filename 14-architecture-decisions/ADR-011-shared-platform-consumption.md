@@ -66,6 +66,22 @@ Trade-offs:
 - the lab uses a single-node CRC and is not HA;
 - the Payment API remains a fixture with in-memory idempotency.
 
-## Evidence boundary
+## Evidence status — 2026-10-02
 
-Until `runtime/shared-platform/scripts/test-crc.sh` succeeds on CRC, the shared-platform profile is `IMPLEMENTED / STATIC_VALIDATED`, not runtime-proven.
+The shared-platform profile has now been executed successfully on OpenShift Local / CRC 4.22.7.
+
+Observed proof markers:
+
+```text
+KONG_SHARED_PLATFORM_DEPLOY=PASS
+API_SHARED_OIDC_TOKEN=PASS
+API_SHARED_GATEWAY_PAYMENT=PASS
+KONG_SHARED_OTEL_TRACE=PASS
+API_MANAGEMENT_SHARED_PLATFORM_CRC=PASS
+```
+
+Allowed claim:
+
+`CRC_RUNTIME_PROVEN_SHARED_PLATFORM_CONSUMER`
+
+The proof is bounded to the single-node CRC lab. It does not prove HA, multi-node scheduling, production sizing, production traffic, Kafka runtime, mTLS/FAPI end-to-end or production readiness.

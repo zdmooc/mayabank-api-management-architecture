@@ -65,6 +65,22 @@ API_MANAGEMENT_SHARED_PLATFORM_CRC=PASS
 
 ## Truth boundary
 
-Before observed execution this profile is `IMPLEMENTED / STATIC_VALIDATED`.
+Observed on 2026-10-02, this profile is `CRC_RUNTIME_PROVEN_SHARED_PLATFORM_CONSUMER` on OpenShift Local / CRC 4.22.7.
 
 It does not prove HA, production sizing, Kafka, durable payment persistence, mTLS/FAPI or production readiness.
+
+
+## Observed CRC result
+
+```text
+KONG_SHARED_CONFIG_RENDER=PASS
+KONG_SHARED_PLATFORM_DEPLOY=PASS
+API_SHARED_OIDC_TOKEN=PASS
+API_SHARED_GATEWAY_PAYMENT=PASS
+KONG_SHARED_OTEL_TRACE=PASS
+API_MANAGEMENT_SHARED_PLATFORM_CRC=PASS
+```
+
+Evidence: `evidence/crc/API-MANAGEMENT-SHARED-PLATFORM-CRC-2026-10-02.md`.
+
+CRC-specific compact requests and the one-worker Kong setting are local-lab constraints only and must not be reused as production sizing.

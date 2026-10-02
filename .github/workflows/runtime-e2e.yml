@@ -27,11 +27,18 @@ jobs:
         run: |
           KC_VALUE="$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')"
           CLIENT_VALUE="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+          READ_VALUE="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+          WRONG_AUD_VALUE="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
           echo "::add-mask::$KC_VALUE"
           echo "::add-mask::$CLIENT_VALUE"
+          echo "::add-mask::$READ_VALUE"
+          echo "::add-mask::$WRONG_AUD_VALUE"
           echo "KC_BOOTSTRAP_ADMIN_PASSWORD=$KC_VALUE" >> "$GITHUB_ENV"
           echo "PAYMENT_CLIENT_SECRET=$CLIENT_VALUE" >> "$GITHUB_ENV"
-          unset KC_VALUE CLIENT_VALUE
+          echo "READ_ONLY_CLIENT_SECRET=$READ_VALUE" >> "$GITHUB_ENV"
+          echo "WRONG_AUDIENCE_CLIENT_SECRET=$WRONG_AUD_VALUE" >> "$GITHUB_ENV"
+          echo "RATE_LIMIT_PER_MINUTE=20" >> "$GITHUB_ENV"
+          unset KC_VALUE CLIENT_VALUE READ_VALUE WRONG_AUD_VALUE
 
       - name: Start Keycloak and Payment API
         run: docker compose -f runtime/e2e/docker-compose.yml up -d --build keycloak payment-api

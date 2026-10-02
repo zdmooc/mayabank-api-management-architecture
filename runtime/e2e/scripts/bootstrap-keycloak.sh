@@ -17,16 +17,36 @@ ADMIN_TOKEN="$(curl -fsS -X POST "${BASE_URL}/realms/master/protocol/openid-conn
 
 test -n "${ADMIN_TOKEN}" && test "${ADMIN_TOKEN}" != "null"
 
-api() {
-  curl -fsS     -H "Authorization: Bearer ${ADMIN_TOKEN}"     -H 'Content-Type: application/json'     "$@"
+admin_json() {
+  local method="$1"
+  local path="$2"
+  local data="$3"
+  local expected="${4:-201}"
+  local body_file
+  body_file="$(mktemp)"
+  local code
+
+  code="$(curl -sS -o "${body_file}" -w '%{http_code}'     -X "${method}" "${BASE_URL}${path}"     -H "Authorization: Bearer ${ADMIN_TOKEN}"     -H 'Content-Type: application/json'     --data-binary "${data}")"
+
+  if [[ "${code}" != "${expected}" ]]; then
+    echo "Keycloak Admin API failure: ${method} ${path}: expected ${expected}, got ${code}" >&2
+    cat "${body_file}" >&2
+    rm -f "${body_file}"
+    return 1
+  fi
+  rm -f "${body_file}"
 }
 
-curl -fsS -o /dev/null -w '%{http_code}'   -X POST "${BASE_URL}/admin/realms"   -H "Authorization: Bearer ${ADMIN_TOKEN}"   -H 'Content-Type: application/json'   --data '{"realm":"mayabank","enabled":true,"registrationAllowed":false}'   | grep -qx '201'
+admin_get() {
+  curl -fsS     -H "Authorization: Bearer ${ADMIN_TOKEN}"     "${BASE_URL}$1"
+}
 
-api -X POST "${BASE_URL}/admin/realms/mayabank/clients"   --data '{"clientId":"payment-api","enabled":true,"protocol":"openid-connect","bearerOnly":true}'
+admin_json POST /admin/realms   '{"realm":"mayabank","enabled":true,"registrationAllowed":false}'
+
+admin_json POST /admin/realms/mayabank/clients   '{"clientId":"payment-api","enabled":true,"protocol":"openid-connect","publicClient":true,"standardFlowEnabled":false,"directAccessGrantsEnabled":false,"serviceAccountsEnabled":false}'
 
 for scope in payments.write payments.read; do
-  api -X POST "${BASE_URL}/admin/realms/mayabank/client-scopes"     --data "{"name":"${scope}","protocol":"openid-connect"}"
+  admin_json POST /admin/realms/mayabank/client-scopes     "{"name":"${scope}","protocol":"openid-connect","attributes":{"include.in.token.scope":"true"}}"
 done
 
 PAYMENT_SECRET="${PAYMENT_CLIENT_SECRET}" python3 - <<'PY' >/tmp/payment-client.json
@@ -43,18 +63,24 @@ print(json.dumps({
 }))
 PY
 
-api -X POST "${BASE_URL}/admin/realms/mayabank/clients"   --data-binary @/tmp/payment-client.json
+admin_json POST /admin/realms/mayabank/clients "$(cat /tmp/payment-client.json)"
 
-PAYMENT_CLIENT_UUID="$(api "${BASE_URL}/admin/realms/mayabank/clients?clientId=payment-client" | jq -r '.[0].id')"
+PAYMENT_CLIENT_UUID="$(admin_get '/admin/realms/mayabank/clients?clientId=payment-client' | jq -r '.[0].id')"
 test -n "${PAYMENT_CLIENT_UUID}" && test "${PAYMENT_CLIENT_UUID}" != "null"
 
 for scope in payments.write payments.read; do
-  SCOPE_ID="$(api "${BASE_URL}/admin/realms/mayabank/client-scopes"     | jq -r --arg n "${scope}" '.[] | select(.name == $n) | .id')"
+  SCOPE_ID="$(admin_get '/admin/realms/mayabank/client-scopes'     | jq -r --arg n "${scope}" '.[] | select(.name == $n) | .id')"
   test -n "${SCOPE_ID}" && test "${SCOPE_ID}" != "null"
-  curl -fsS -o /dev/null     -X PUT "${BASE_URL}/admin/realms/mayabank/clients/${PAYMENT_CLIENT_UUID}/default-client-scopes/${SCOPE_ID}"     -H "Authorization: Bearer ${ADMIN_TOKEN}"
+
+  code="$(curl -sS -o /tmp/scope-link.out -w '%{http_code}'     -X PUT "${BASE_URL}/admin/realms/mayabank/clients/${PAYMENT_CLIENT_UUID}/default-client-scopes/${SCOPE_ID}"     -H "Authorization: Bearer ${ADMIN_TOKEN}")"
+  if [[ "${code}" != "204" ]]; then
+    echo "Failed to link client scope ${scope}: HTTP ${code}" >&2
+    cat /tmp/scope-link.out >&2
+    exit 1
+  fi
 done
 
-api -X POST "${BASE_URL}/admin/realms/mayabank/clients/${PAYMENT_CLIENT_UUID}/protocol-mappers/models"   --data '{
+admin_json POST "/admin/realms/mayabank/clients/${PAYMENT_CLIENT_UUID}/protocol-mappers/models"   '{
     "name":"payment-api-audience",
     "protocol":"openid-connect",
     "protocolMapper":"oidc-audience-mapper",

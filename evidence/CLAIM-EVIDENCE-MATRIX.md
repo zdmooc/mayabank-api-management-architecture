@@ -13,9 +13,9 @@
 | LLD | IMPLEMENTATION_CONTRACT | `architecture/LLD.md` |
 | UML component/sequence/deployment | STATIC_VALIDATED | `diagrams/uml/` + architecture deliverables CI gate |
 | OpenShift Payment API manifest | STATIC_ASSET | `manifests/openshift/payment-api.yaml` |
-| Shared-platform CRC profile | STATIC_VALIDATED | `runtime/shared-platform/` + validate-contracts CI |
-| Shared OIDC consumption on CRC | NOT_PROVEN | runtime execution pending |
-| Kong → shared OTel traces on CRC | NOT_PROVEN | runtime execution pending |
+| Shared-platform CRC profile | CRC_RUNTIME_PROVEN_SHARED_PLATFORM_CONSUMER | observed OpenShift Local / CRC 4.22.7 execution |
+| Shared OIDC consumption on CRC | CRC_RUNTIME_PROVEN | `API_SHARED_OIDC_TOKEN=PASS` |
+| Kong → shared OTel traces on CRC | CRC_RUNTIME_PROVEN | `KONG_SHARED_OTEL_TRACE=PASS` |
 | Kong gateway runtime | CI_RUNTIME_PROVEN_E2E | run `36996509086` |
 | Keycloak integration in standalone CI | CI_RUNTIME_PROVEN_E2E | Keycloak 26.8.0, run `36996509086` |
 | OAuth2 client_credentials | CI_RUNTIME_PROVEN_E2E | audience + scopes observed, run `36996509086` |
@@ -29,7 +29,7 @@
 | Correlation ID | CI_RUNTIME_PROVEN_E2E | gateway response header observed |
 | Expired-token behavioral test | NOT_PROVEN | dedicated expiry case not yet executed |
 | Kafka runtime in this repo | NOT_PROVEN | LAB-09 pending |
-| OpenShift runtime | NOT_PROVEN | shared-platform CRC execution pending; LAB-07 remains manual |
+| OpenShift runtime | CRC_RUNTIME_PROVEN_SHARED_PLATFORM_CONSUMER | shared-platform profile executed successfully on CRC 4.22.7 |
 | Full target architecture E2E | NOT_PROVEN | Kafka/OpenShift/HA not included in current CI proof |
 | Production readiness | NOT_CLAIMED | — |
 
@@ -61,7 +61,7 @@ The target profile is implemented under `runtime/shared-platform/` and validated
 - in-cluster JWKS from `keycloak-service.keycloak-system.svc`;
 - OTLP traces endpoint `otel-collector.shared-observability.svc:4318`.
 
-Promotion requires an observed successful CRC run with these markers:
+Observed successful CRC run produced these markers:
 
 ```text
 API_SHARED_KEYCLOAK_CLIENT=PASS
@@ -72,3 +72,24 @@ API_SHARED_GATEWAY_PAYMENT=PASS
 KONG_SHARED_OTEL_TRACE=PASS
 API_MANAGEMENT_SHARED_PLATFORM_CRC=PASS
 ```
+
+
+## Shared-platform CRC runtime evidence — 2026-10-02
+
+Primary evidence:
+- `evidence/crc/API-MANAGEMENT-SHARED-PLATFORM-CRC-2026-10-02.md`
+
+Observed terminal markers:
+
+```text
+KONG_SHARED_PLATFORM_DEPLOY=PASS
+API_SHARED_OIDC_TOKEN=PASS
+API_SHARED_GATEWAY_PAYMENT=PASS
+KONG_SHARED_OTEL_TRACE=PASS
+API_MANAGEMENT_SHARED_PLATFORM_CRC=PASS
+```
+
+Allowed claim:
+`CRC_RUNTIME_PROVEN_SHARED_PLATFORM_CONSUMER`.
+
+Scope remains bounded to single-node CRC/OpenShift Local; HA, multi-node, production sizing, Kafka integration and production readiness remain unproven.

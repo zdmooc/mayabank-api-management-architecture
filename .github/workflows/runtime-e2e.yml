@@ -25,8 +25,13 @@ jobs:
 
       - name: Generate runtime-only credentials
         run: |
-          echo "KC_BOOTSTRAP_ADMIN_PASSWORD=$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')" >> "$GITHUB_ENV"
-          echo "PAYMENT_CLIENT_SECRET=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')" >> "$GITHUB_ENV"
+          KC_VALUE="$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')"
+          CLIENT_VALUE="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+          echo "::add-mask::$KC_VALUE"
+          echo "::add-mask::$CLIENT_VALUE"
+          echo "KC_BOOTSTRAP_ADMIN_PASSWORD=$KC_VALUE" >> "$GITHUB_ENV"
+          echo "PAYMENT_CLIENT_SECRET=$CLIENT_VALUE" >> "$GITHUB_ENV"
+          unset KC_VALUE CLIENT_VALUE
 
       - name: Start Keycloak and Payment API
         run: docker compose -f runtime/e2e/docker-compose.yml up -d --build keycloak payment-api

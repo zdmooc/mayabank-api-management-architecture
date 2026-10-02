@@ -17,6 +17,7 @@ Le dépôt est **vendor-neutral** : les principes d'architecture sont valables p
 - [UML Deployment — OpenShift](diagrams/uml/deployment-openshift.puml)
 - [OWASP API Security Top 10 — mapping architecture](security/OWASP-API-Security-Top10-2023.md)
 - [Claim / Evidence Matrix](evidence/CLAIM-EVIDENCE-MATRIX.md)
+- [API Management — Shared Platform CRC Runtime Evidence](evidence/crc/API-MANAGEMENT-SHARED-PLATFORM-CRC-2026-10-02.md)
 - [OpenAPI Payment API](apis/openapi/payment-api.yaml)
 - [AsyncAPI Payment Events](apis/asyncapi/payment-events.yaml)
 
@@ -116,6 +117,6 @@ flowchart TD
 
 Ce dépôt démontre une capacité de **conception Solution Architecture** : HLD/LLD, contrats, UML, API security, ADR, intégration et gouvernance. Il démontre aussi en CI une chaîne runtime bornée **Keycloak 26.8.0 → Kong 3.9.3 → Payment API**, avec tests positifs/négatifs et idempotence.
 
-La cible entreprise est désormais implémentée séparément sous `runtime/shared-platform/` : **Kong reste la plateforme spécialisée**, tandis que OIDC, OTel, secrets, GitOps et quality gates sont consommés depuis `shared-platform-services-openshift`. Ce profil CRC est actuellement **IMPLEMENTED / STATIC_VALIDATED** et ne deviendra runtime-proven qu'après exécution observée.
+La cible entreprise est désormais implémentée séparément sous `runtime/shared-platform/` : **Kong reste la plateforme spécialisée**, tandis que OIDC, OTel, secrets, GitOps et quality gates sont consommés depuis `shared-platform-services-openshift`. Ce profil est maintenant **CRC_RUNTIME_PROVEN_SHARED_PLATFORM_CONSUMER** sur OpenShift Local / CRC 4.22.7 : Kong consomme le realm OIDC partagé `mayabank`, route vers la Payment API et exporte des traces vers le collector OTel partagé.
 
 Le dépôt ne remplace pas plusieurs années d'expérience de production sur Apigee, Kong, MuleSoft ou Axway et ne revendique ni HA, ni production readiness.

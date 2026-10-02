@@ -1,0 +1,29 @@
+@startuml
+title Create Payment - OAuth/OIDC + API Management
+actor Client
+participant "Authorization Server" as IAM
+participant "API Gateway" as GW
+participant "Payment API" as API
+database "State Store" as DB
+participant "Payment Hub" as HUB
+queue "Kafka" as K
+
+Client -> IAM : obtain access token
+IAM --> Client : access token
+Client -> GW : POST /payments\nBearer token + Idempotency-Key
+GW -> GW : validate token/policies/rate limit
+GW -> API : request + controlled identity context
+API -> API : business/object authorization
+API -> DB : check idempotency key
+alt existing request
+  DB --> API : previous result
+  API --> GW : deterministic previous result
+else new request
+  API -> HUB : submit payment
+  HUB --> API : accepted/rejected
+  API -> DB : persist payment/result
+  API -> K : PaymentStatusChanged
+  API --> GW : 201 / problem
+end
+GW --> Client : response
+@enduml

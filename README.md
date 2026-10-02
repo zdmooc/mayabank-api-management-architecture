@@ -114,4 +114,8 @@ flowchart TD
 
 ## Positionnement honnête
 
-Ce dépôt démontre une capacité de **conception Solution Architecture** : HLD/LLD, contrats, UML, API security, ADR, intégration et gouvernance. Il démontre aussi en CI une chaîne runtime bornée **Keycloak 26.8.0 → Kong 3.9.3 → Payment API**, avec tests positifs/négatifs et idempotence. Il ne remplace pas plusieurs années d'expérience de production sur Apigee, Kong, MuleSoft ou Axway et ne revendique ni OpenShift/Kafka runtime, ni HA, ni production readiness.
+Ce dépôt démontre une capacité de **conception Solution Architecture** : HLD/LLD, contrats, UML, API security, ADR, intégration et gouvernance. Il démontre aussi en CI une chaîne runtime bornée **Keycloak 26.8.0 → Kong 3.9.3 → Payment API**, avec tests positifs/négatifs et idempotence.
+
+La cible entreprise est désormais implémentée séparément sous `runtime/shared-platform/` : **Kong reste la plateforme spécialisée**, tandis que OIDC, OTel, secrets, GitOps et quality gates sont consommés depuis `shared-platform-services-openshift`. Ce profil CRC est actuellement **IMPLEMENTED / STATIC_VALIDATED** et ne deviendra runtime-proven qu'après exécution observée.
+
+Le dépôt ne remplace pas plusieurs années d'expérience de production sur Apigee, Kong, MuleSoft ou Axway et ne revendique ni HA, ni production readiness.

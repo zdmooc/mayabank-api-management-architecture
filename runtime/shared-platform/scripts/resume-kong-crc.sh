@@ -26,5 +26,5 @@ if ! oc -n mayabank-api rollout status deploy/api-gateway --timeout=600s; then
   exit 1
 fi
 
-oc -n mayabank-api get deploy/api-gateway,pods,svc,route -o wide
+oc -n mayabank-api get deploy,pods,svc,route -o wide
 echo "KONG_SHARED_PLATFORM_DEPLOY=PASS"

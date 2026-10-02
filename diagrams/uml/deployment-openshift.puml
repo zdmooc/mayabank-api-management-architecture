@@ -1,0 +1,34 @@
+@startuml
+title MayaBank API Management - OpenShift Reference Deployment
+node "External / Corporate Edge" {
+  component WAF
+}
+node "OpenShift / Kubernetes" {
+  node "edge namespace" {
+    component "API Gateway" as GW
+  }
+  node "identity namespace" {
+    component "Keycloak / IdP reference" as IAM
+  }
+  node "mayabank-api namespace" {
+    component "Payment API" as API
+  }
+  node "events namespace" {
+    queue "Kafka / Event Platform" as K
+  }
+  node "observability namespace" {
+    component "Telemetry Stack" as O
+  }
+}
+database "Payment Store" as DB
+component "Payment Hub / Legacy" as HUB
+
+WAF --> GW
+GW --> IAM
+GW --> API
+API --> DB
+API --> HUB
+API --> K
+GW --> O
+API --> O
+@enduml

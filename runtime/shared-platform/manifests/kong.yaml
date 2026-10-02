@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: mayabank-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+        app.kubernetes.io/part-of: mayabank-api-management
+    spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: kong
+          image: docker.io/library/kong:3.9.3
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KONG_DATABASE
+              value: "off"
+            - name: KONG_DECLARATIVE_CONFIG
+              value: /kong/declarative/kong.yml
+            - name: KONG_PREFIX
+              value: /tmp/kong
+            - name: KONG_PROXY_LISTEN
+              value: 0.0.0.0:8000
+            - name: KONG_ADMIN_LISTEN
+              value: 0.0.0.0:8001
+            - name: KONG_TRACING_INSTRUMENTATIONS
+              value: all
+            - name: KONG_TRACING_SAMPLING_RATE
+              value: "1.0"
+            - name: KONG_PROXY_ACCESS_LOG
+              value: /dev/stdout
+            - name: KONG_PROXY_ERROR_LOG
+              value: /dev/stderr
+            - name: KONG_ADMIN_ACCESS_LOG
+              value: /dev/stdout
+            - name: KONG_ADMIN_ERROR_LOG
+              value: /dev/stderr
+          ports:
+            - name: proxy
+              containerPort: 8000
+            - name: admin
+              containerPort: 8001
+          volumeMounts:
+            - name: kong-config
+              mountPath: /kong/declarative
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              cpu: 750m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            runAsNonRoot: true
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: admin
+            initialDelaySeconds: 8
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: admin
+            initialDelaySeconds: 20
+            periodSeconds: 10
+      volumes:
+        - name: kong-config
+          configMap:
+            name: kong-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: mayabank-api
+spec:
+  selector:
+    app: api-gateway
+  ports:
+    - name: proxy
+      port: 8000
+      targetPort: proxy
+    - name: admin
+      port: 8001
+      targetPort: admin
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: api-gateway
+  namespace: mayabank-api
+spec:
+  to:
+    kind: Service
+    name: api-gateway
+  port:
+    targetPort: proxy
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

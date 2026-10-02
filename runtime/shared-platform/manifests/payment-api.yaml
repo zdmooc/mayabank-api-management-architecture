@@ -35,7 +35,7 @@ spec:
               containerPort: 8080
           resources:
             requests:
-              cpu: 50m
+              cpu: 10m
               memory: 96Mi
             limits:
               cpu: 500m
@@ -70,3 +70,8 @@ spec:
     - name: http
       port: 8080
       targetPort: http
+
+# CRC local compact scheduling note:
+# 10m CPU request is intentionally lab-only for the lightweight Flask payment API
+# on a heavily constrained single-node CRC. The 500m CPU limit remains unchanged.
+# This is not a production sizing recommendation.

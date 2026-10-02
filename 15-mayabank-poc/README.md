@@ -18,7 +18,7 @@ Payment API
 Observability
 ```
 
-sur OpenShift Local lorsque les labs seront exécutés.
+sur OpenShift Local en consommant la plateforme commune lorsque le gate runtime CRC sera exécuté.
 
 ## Livrables
 
@@ -34,3 +34,8 @@ sur OpenShift Local lorsque les labs seront exécutés.
 - runbook ;
 - RACI ;
 - preuves d'exécution.
+
+
+## Profil Shared Platform
+
+Le profil `runtime/shared-platform/` remplace la duplication cible Keycloak/observabilité par des contrats `CONSUME_SHARED` : Shared OIDC + Shared OTel, tandis que Kong reste `SPECIALIZED_PLATFORM`. Le runtime Docker E2E reste disponible comme `DEDICATED_FOR_TEST`.

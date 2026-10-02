@@ -66,6 +66,7 @@ print(json.dumps({
     "publicClient": False,
     "secret": os.environ["PAYMENT_SECRET"],
     "serviceAccountsEnabled": True,
+    "fullScopeAllowed": False,
     "standardFlowEnabled": False,
     "directAccessGrantsEnabled": False
 }))

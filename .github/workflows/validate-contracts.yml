@@ -28,6 +28,28 @@ jobs:
       - name: Secret hygiene
         run: python scripts/no_secrets_check.py
 
+      - name: Shared-platform CRC profile gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n runtime/shared-platform/scripts/*.sh
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          paths = [
+              Path("runtime/shared-platform/capability-consumption.yaml"),
+              *sorted(Path("runtime/shared-platform/manifests").glob("*.yaml")),
+          ]
+          for path in paths:
+              docs=list(yaml.safe_load_all(path.read_text(encoding="utf-8")))
+              assert docs and all(doc is not None for doc in docs), path
+              print("validated", path)
+          PY
+          test -s runtime/shared-platform/kong/kong.template.yml
+          grep -q 'traces_endpoint: "__OTEL_TRACES_ENDPOINT__"' runtime/shared-platform/kong/kong.template.yml
+          grep -q 'keycloak-service.keycloak-system.svc:8080' runtime/shared-platform/manifests/payment-api.yaml
+          grep -q 'otel-collector.shared-observability.svc:4318' runtime/shared-platform/capability-consumption.yaml
+
       - name: Architecture deliverables gate
         run: |
           test -s architecture/HLD.md

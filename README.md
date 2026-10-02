@@ -8,6 +8,20 @@ Référentiel professionnel et laboratoire différé pour apprendre, concevoir e
 
 Le dépôt est **vendor-neutral** : les principes d'architecture sont valables pour **Apigee, Kong, MuleSoft Anypoint, Axway Amplify** et autres plateformes. Les labs locaux privilégient **Kong Gateway + Keycloak + OpenShift Local/CRC** lorsqu'un produit exécutable localement est nécessaire.
 
+## Livrables d'architecture directement démontrables
+
+- [HLD — architecture de haut niveau](architecture/HLD.md)
+- [LLD — design détaillé](architecture/LLD.md)
+- [UML Component](diagrams/uml/component.puml)
+- [UML Sequence — création paiement](diagrams/uml/sequence-payment-create.puml)
+- [UML Deployment — OpenShift](diagrams/uml/deployment-openshift.puml)
+- [OWASP API Security Top 10 — mapping architecture](security/OWASP-API-Security-Top10-2023.md)
+- [Claim / Evidence Matrix](evidence/CLAIM-EVIDENCE-MATRIX.md)
+- [OpenAPI Payment API](apis/openapi/payment-api.yaml)
+- [AsyncAPI Payment Events](apis/asyncapi/payment-events.yaml)
+
+Ces artefacts sont des **preuves de conception**. Les claims runtime restent séparés et ne sont promus qu'après exécution observée.
+
 ## Chaîne cible
 
 ```mermaid
@@ -39,17 +53,19 @@ flowchart LR
 - intégrer OpenShift/Kubernetes, Kafka, IAM, SI legacy et cloud ;
 - arbitrer Apigee vs Kong vs MuleSoft vs Axway ;
 - définir gouvernance, RACI, standards, ADR et architecture de référence ;
-- expliquer les choix en entretien et les défendre devant sécurité, production et métier.
+- produire et défendre HLD, LLD, UML, threat model et décisions d'architecture ;
+- expliquer les choix devant sécurité, production et métier.
 
 ## Standards de référence — baseline 2026
 
-- OpenAPI Specification **3.2.0**
+- OpenAPI Specification **3.2.1**
 - AsyncAPI Specification **3.1.0**
 - OAuth 2.0 + **RFC 9700**
 - OpenID Connect
 - PKCE
 - mTLS / sender-constrained tokens selon les cas
 - **FAPI 2.0** pour les API à haut niveau de sécurité
+- **OWASP API Security Top 10 — 2023** comme baseline de revue
 - OAuth 2.1 : à suivre comme **Internet-Draft**, pas comme RFC final dans cette baseline
 
 ## Parcours
@@ -73,9 +89,9 @@ flowchart LR
 17. [Entretien](16-interview-preparation/README.md)
 18. [Labs à exécuter](labs/README.md)
 
-## Règle
+## Règle de preuve
 
-Les labs sont préparés mais **non exécutés**. Leur statut est `À EXÉCUTER` jusqu'à preuve réelle.
+Les labs sont préparés mais **non exécutés**. Leur statut est `À EXÉCUTER` jusqu'à preuve réelle. La [Claim / Evidence Matrix](evidence/CLAIM-EVIDENCE-MATRIX.md) est la source de vérité sur le niveau de preuve.
 
 ## Architecture MayaBank
 
@@ -98,4 +114,4 @@ flowchart TD
 
 ## Positionnement honnête
 
-Ce dépôt démontre une capacité de conception, de POC et de raisonnement d'architecture. Il ne remplace pas plusieurs années d'expérience de production sur Apigee, Kong, MuleSoft ou Axway.
+Ce dépôt démontre une capacité de **conception Solution Architecture** : HLD/LLD, contrats, UML, API security, ADR, intégration, gouvernance et préparation de POC. Il ne remplace pas plusieurs années d'expérience de production sur Apigee, Kong, MuleSoft ou Axway et ne revendique pas un runtime end-to-end tant que les labs correspondants ne sont pas exécutés.

@@ -1,0 +1,26 @@
+apiVersion: platform.mayabank.example/v1alpha1
+kind: CapabilityConsumption
+metadata:
+  name: api-management
+spec:
+  identity:
+    mode: CONSUME_SHARED
+    issuer: https://keycloak.apps-crc.testing/realms/mayabank
+  observability:
+    mode: CONSUME_SHARED
+    otlpHttpEndpoint: http://otel-collector.shared-observability.svc:4318
+  secrets:
+    mode: CONSUME_SHARED
+  gitops:
+    mode: CONSUME_SHARED
+  quality:
+    mode: CONSUME_SHARED
+  eventing:
+    mode: REFERENCE_ONLY
+  database:
+    mode: REFERENCE_ONLY
+  ownedCapabilities:
+    - kong-api-gateway
+    - gateway-policies
+    - api-lifecycle-governance
+    - openapi-asyncapi-governance

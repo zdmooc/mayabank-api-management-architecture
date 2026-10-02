@@ -57,7 +57,7 @@ spec:
               readOnly: true
           resources:
             requests:
-              cpu: 100m
+              cpu: 25m
               memory: 192Mi
             limits:
               cpu: 750m
@@ -114,3 +114,8 @@ spec:
   tls:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect
+
+# CRC local compact scheduling note:
+# 25m CPU request is intentionally lab-only for the constrained single-node CRC.
+# The 750m CPU limit remains available for runtime burst.
+# This is not a production sizing recommendation.

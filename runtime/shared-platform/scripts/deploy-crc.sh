@@ -22,14 +22,40 @@ oc apply -f runtime/shared-platform/manifests/payment-api-build.yaml
 oc -n mayabank-api start-build payment-api --from-dir=runtime/e2e/payment-api --follow --wait
 echo "PAYMENT_API_BUILD=PASS"
 
+PAYMENT_API_EXISTED=false
+if oc -n mayabank-api get deploy/payment-api >/dev/null 2>&1; then
+  PAYMENT_API_EXISTED=true
+fi
 oc apply -f runtime/shared-platform/manifests/payment-api.yaml
-oc -n mayabank-api rollout restart deploy/payment-api >/dev/null 2>&1 || true
-oc -n mayabank-api rollout status deploy/payment-api --timeout=600s
+if [[ "${PAYMENT_API_EXISTED}" == "true" ]]; then
+  oc -n mayabank-api rollout restart deploy/payment-api
+fi
+if ! oc -n mayabank-api rollout status deploy/payment-api --timeout=600s; then
+  echo "== Payment API rollout diagnostics"
+  oc -n mayabank-api get deploy,rs,pods -o wide || true
+  oc -n mayabank-api describe deploy/payment-api || true
+  oc -n mayabank-api describe pods -l app=payment-api || true
+  oc -n mayabank-api get events --sort-by=.lastTimestamp | tail -n 120 || true
+  exit 1
+fi
 
 bash runtime/shared-platform/scripts/render-kong-config.sh
+KONG_EXISTED=false
+if oc -n mayabank-api get deploy/api-gateway >/dev/null 2>&1; then
+  KONG_EXISTED=true
+fi
 oc apply -f runtime/shared-platform/manifests/kong.yaml
-oc -n mayabank-api rollout restart deploy/api-gateway >/dev/null 2>&1 || true
-oc -n mayabank-api rollout status deploy/api-gateway --timeout=600s
+if [[ "${KONG_EXISTED}" == "true" ]]; then
+  oc -n mayabank-api rollout restart deploy/api-gateway
+fi
+if ! oc -n mayabank-api rollout status deploy/api-gateway --timeout=600s; then
+  echo "== Kong rollout diagnostics"
+  oc -n mayabank-api get deploy,rs,pods -o wide || true
+  oc -n mayabank-api describe deploy/api-gateway || true
+  oc -n mayabank-api describe pods -l app=api-gateway || true
+  oc -n mayabank-api get events --sort-by=.lastTimestamp | tail -n 120 || true
+  exit 1
+fi
 
 oc -n mayabank-api get deploy,svc,pods,route -o wide
 echo "KONG_SHARED_PLATFORM_DEPLOY=PASS"

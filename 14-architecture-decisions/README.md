@@ -12,3 +12,4 @@ ADRs présents :
 - ADR-008 Observability baseline
 - ADR-009 Control plane / data plane separation
 - ADR-010 Product-neutral architecture
+- ADR-011 Shared Platform consumption for API Management

@@ -38,6 +38,8 @@ spec:
               value: all
             - name: KONG_TRACING_SAMPLING_RATE
               value: "1.0"
+            - name: KONG_NGINX_WORKER_PROCESSES
+              value: "1"
             - name: KONG_PROXY_ACCESS_LOG
               value: /dev/stdout
             - name: KONG_PROXY_ERROR_LOG
@@ -119,3 +121,9 @@ spec:
 # 25m CPU request is intentionally lab-only for the constrained single-node CRC.
 # The 750m CPU limit remains available for runtime burst.
 # This is not a production sizing recommendation.
+
+# Kong CRC memory note:
+# The local CRC profile forces a single Nginx/OpenResty worker.
+# On the 8-vCPU single-node lab, Kong auto-detected 8 workers and exceeded
+# the 512Mi container memory limit during startup (OOMKilled / exit 137).
+# This is a lab-constrained runtime setting, not a production sizing recommendation.

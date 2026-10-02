@@ -4,14 +4,36 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
       - run: pip install -r requirements.txt
-      - run: python scripts/validate_openapi.py apis/openapi/payment-api.yaml
-      - run: python scripts/no_secrets_check.py
+
+      - name: Validate OpenAPI
+        run: python scripts/validate_openapi.py apis/openapi/payment-api.yaml
+
+      - name: Validate AsyncAPI
+        run: python scripts/validate_asyncapi.py apis/asyncapi/payment-events.yaml
+
+      - name: Secret hygiene
+        run: python scripts/no_secrets_check.py
+
+      - name: Architecture deliverables gate
+        run: |
+          test -s architecture/HLD.md
+          test -s architecture/LLD.md
+          test -s security/OWASP-API-Security-Top10-2023.md
+          test -s diagrams/uml/component.puml
+          test -s diagrams/uml/sequence-payment-create.puml
+          test -s diagrams/uml/deployment-openshift.puml
+          test -s evidence/CLAIM-EVIDENCE-MATRIX.md

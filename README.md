@@ -20,7 +20,7 @@ Le dépôt est **vendor-neutral** : les principes d'architecture sont valables p
 - [OpenAPI Payment API](apis/openapi/payment-api.yaml)
 - [AsyncAPI Payment Events](apis/asyncapi/payment-events.yaml)
 
-Ces artefacts sont des **preuves de conception**. Les claims runtime restent séparés et ne sont promus qu'après exécution observée.
+Ces artefacts sont des **preuves de conception**. Le dépôt possède maintenant aussi une preuve runtime CI bornée **Kong + Keycloak + Payment API** : [API Management E2E Runtime Evidence](evidence/ci/API-MANAGEMENT-E2E-2026-10-02.md).
 
 ## Chaîne cible
 
@@ -91,7 +91,7 @@ flowchart LR
 
 ## Règle de preuve
 
-Les labs sont préparés mais **non exécutés**. Leur statut est `À EXÉCUTER` jusqu'à preuve réelle. La [Claim / Evidence Matrix](evidence/CLAIM-EVIDENCE-MATRIX.md) est la source de vérité sur le niveau de preuve.
+Les labs manuels historiques conservent leur propre statut `À EXÉCUTER` tant qu'ils ne sont pas rejoués individuellement. En parallèle, `runtime/e2e/` fournit désormais une **preuve CI exécutée avec succès** pour la chaîne Kong + Keycloak + Payment API. La [Claim / Evidence Matrix](evidence/CLAIM-EVIDENCE-MATRIX.md) reste la source de vérité.
 
 ## Architecture MayaBank
 
@@ -114,4 +114,4 @@ flowchart TD
 
 ## Positionnement honnête
 
-Ce dépôt démontre une capacité de **conception Solution Architecture** : HLD/LLD, contrats, UML, API security, ADR, intégration, gouvernance et préparation de POC. Il ne remplace pas plusieurs années d'expérience de production sur Apigee, Kong, MuleSoft ou Axway et ne revendique pas un runtime end-to-end tant que les labs correspondants ne sont pas exécutés.
+Ce dépôt démontre une capacité de **conception Solution Architecture** : HLD/LLD, contrats, UML, API security, ADR, intégration et gouvernance. Il démontre aussi en CI une chaîne runtime bornée **Keycloak 26.8.0 → Kong 3.9.3 → Payment API**, avec tests positifs/négatifs et idempotence. Il ne remplace pas plusieurs années d'expérience de production sur Apigee, Kong, MuleSoft ou Axway et ne revendique ni OpenShift/Kafka runtime, ni HA, ni production readiness.

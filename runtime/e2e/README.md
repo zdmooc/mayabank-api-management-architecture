@@ -26,6 +26,10 @@ This is a **CI lab**, not production evidence.
 - idempotent replay;
 - protected payment read;
 - missing-token rejection;
+- insufficient-scope rejection (403);
+- wrong-audience rejection (401);
+- request-size rejection (413);
+- rate-limit rejection (429, reduced CI-only threshold);
 - invalid-signature rejection.
 
 ## Security model
@@ -51,6 +55,8 @@ Kong OSS JWT validates signature and selected registered claims. Audience and OA
 ```bash
 export KC_BOOTSTRAP_ADMIN_PASSWORD="$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')"
 export PAYMENT_CLIENT_SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+export READ_ONLY_CLIENT_SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+export WRONG_AUDIENCE_CLIENT_SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
 
 docker compose -f runtime/e2e/docker-compose.yml up -d --build keycloak payment-api
 bash runtime/e2e/scripts/bootstrap-keycloak.sh

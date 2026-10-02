@@ -1,4 +1,4 @@
-openapi: 3.2.0
+openapi: 3.2.1
 info:
   title: MayaBank Payment API
   version: 1.0.0
@@ -37,11 +37,18 @@ paths:
           $ref: '#/components/responses/Problem'
         '401':
           $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
         '422':
+          $ref: '#/components/responses/Problem'
+        '429':
           $ref: '#/components/responses/Problem'
   /payments/{paymentId}:
     get:
       operationId: getPayment
+      summary: Get a payment
       security:
         - oauth2:
             - payments.read
@@ -58,7 +65,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
         '404':
+          $ref: '#/components/responses/Problem'
+        '429':
           $ref: '#/components/responses/Problem'
 components:
   securitySchemes:
@@ -74,6 +87,7 @@ components:
   schemas:
     PaymentRequest:
       type: object
+      additionalProperties: false
       required: [debtorAccountId, creditorIban, amount]
       properties:
         debtorAccountId:
@@ -84,6 +98,7 @@ components:
           $ref: '#/components/schemas/Money'
     Payment:
       type: object
+      additionalProperties: false
       required: [paymentId, status, amount]
       properties:
         paymentId:
@@ -95,6 +110,7 @@ components:
           $ref: '#/components/schemas/Money'
     Money:
       type: object
+      additionalProperties: false
       required: [value, currency]
       properties:
         value:
@@ -105,6 +121,8 @@ components:
           pattern: '^[A-Z]{3}$'
     Problem:
       type: object
+      additionalProperties: false
+      required: [title, status]
       properties:
         type: { type: string }
         title: { type: string }

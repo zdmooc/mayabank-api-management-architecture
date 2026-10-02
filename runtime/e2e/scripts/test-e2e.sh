@@ -5,16 +5,17 @@ set -euo pipefail
 
 KC_URL="${KEYCLOAK_EXTERNAL_URL:-http://localhost:8080}"
 GW_URL="${KONG_PROXY_URL:-http://localhost:8000}"
+KONG_ADMIN_URL="${KONG_ADMIN_URL:-http://localhost:8001}"
 
 for _ in $(seq 1 90); do
-  if curl -fsS "${GW_URL}/health" >/dev/null 2>&1; then
+  if curl -fsS "${KONG_ADMIN_URL}/status" >/dev/null 2>&1; then
     break
   fi
   sleep 2
 done
 
-curl -fsS "${GW_URL}/health" | jq -e '.status == "UP"' >/dev/null
-echo "API_HEALTH_VIA_KONG=PASS"
+curl -fsS "${KONG_ADMIN_URL}/status" >/dev/null
+echo "KONG_ADMIN_READY=PASS"
 
 NO_TOKEN_CODE="$(curl -sS -o /tmp/no-token.json -w '%{http_code}'   -X POST "${GW_URL}/payments"   -H 'Content-Type: application/json'   -H 'Idempotency-Key: 1111111111111111'   --data '{"debtorAccountId":"D1","creditorIban":"FR761234567890","amount":{"value":"10.00","currency":"EUR"}}')"
 

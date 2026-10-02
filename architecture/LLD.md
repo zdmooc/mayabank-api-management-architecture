@@ -1,7 +1,7 @@
 # LLD — MayaBank API Management Reference Implementation
 
 **Classification:** REFERENCE_DESIGN / IMPLEMENTATION_CONTRACT  
-**Runtime status:** NOT_RUNTIME_PROVEN
+**Runtime status:** standalone CI = CI_RUNTIME_PROVEN_E2E; shared-platform CRC profile = IMPLEMENTED / STATIC_VALIDATED
 
 ## 1. Scope
 
@@ -164,3 +164,33 @@ Before promotion to a runtime claim, add/validate:
 ## 14. Evidence boundary
 
 Design files, manifests and contracts are not runtime proof. Runtime promotion requires command/test output stored under `evidence/` and referenced from the claim/evidence matrix.
+
+
+## 15. Shared-platform consumption profile
+
+ADR-011 introduces a second, non-disruptive runtime profile under `runtime/shared-platform/`.
+
+Target CRC namespaces:
+
+```text
+shared-observability
+  -> otel-collector
+
+keycloak-system
+  -> RHBK/Keycloak specialist runtime
+  -> shared realm mayabank
+
+mayabank-api
+  -> api-gateway / Kong 3.9.3
+  -> payment-api fixture
+```
+
+Runtime contract:
+- issuer: `https://keycloak.apps-crc.testing/realms/mayabank`;
+- in-cluster JWKS: `http://keycloak-service.keycloak-system.svc:8080/realms/mayabank/protocol/openid-connect/certs`;
+- OTLP traces: `http://otel-collector.shared-observability.svc:4318/v1/traces`;
+- client/scopes/audience remain API-owned;
+- Keycloak runtime lifecycle remains specialist-owned;
+- OTel collector lifecycle remains shared-platform-owned.
+
+This profile is not promoted to CRC runtime evidence until the deployment and test scripts are observed successfully on the real CRC cluster.

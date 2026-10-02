@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mayabank-api
+  labels:
+    app.kubernetes.io/part-of: mayabank-api-management
+    platform.mayabank.example/consumer: api-management

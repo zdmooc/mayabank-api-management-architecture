@@ -1,0 +1,27 @@
+@startuml
+title MayaBank API Management - Component View
+skinparam componentStyle rectangle
+
+actor Consumer
+actor Partner
+
+component "WAF / Edge" as Edge
+component "API Management" as APIM
+component "Authorization Server\nOIDC/OAuth2" as IAM
+component "Payment API" as API
+component "Payment Hub" as Hub
+component "Event Streaming\nKafka" as Kafka
+database "Payment / Idempotency Store" as DB
+component "Observability" as Obs
+
+Consumer --> Edge : HTTPS
+Partner --> Edge : HTTPS
+Edge --> APIM
+APIM --> IAM : discovery / JWKS / auth flows
+APIM --> API : trusted API traffic
+API --> Hub : payment command/query
+API --> DB : state/idempotency
+API --> Kafka : PaymentStatusChanged
+APIM --> Obs : metrics/logs/traces
+API --> Obs : metrics/logs/traces
+@enduml

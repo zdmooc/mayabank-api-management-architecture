@@ -1,0 +1,52 @@
+name: api-management-runtime-e2e
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "runtime/e2e/**"
+      - ".github/workflows/runtime-e2e.yml"
+  pull_request:
+    paths:
+      - "runtime/e2e/**"
+      - ".github/workflows/runtime-e2e.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate runtime-only credentials
+        run: |
+          echo "KC_BOOTSTRAP_ADMIN_PASSWORD=$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')" >> "$GITHUB_ENV"
+          echo "PAYMENT_CLIENT_SECRET=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')" >> "$GITHUB_ENV"
+
+      - name: Start Keycloak and Payment API
+        run: docker compose -f runtime/e2e/docker-compose.yml up -d --build keycloak payment-api
+
+      - name: Bootstrap Keycloak
+        run: bash runtime/e2e/scripts/bootstrap-keycloak.sh
+
+      - name: Render Kong declarative config
+        run: bash runtime/e2e/scripts/render-kong-config.sh
+
+      - name: Start Kong
+        run: docker compose -f runtime/e2e/docker-compose.yml up -d kong
+
+      - name: Execute E2E proof
+        run: bash runtime/e2e/scripts/test-e2e.sh
+
+      - name: Diagnostics
+        if: failure()
+        run: docker compose -f runtime/e2e/docker-compose.yml logs --no-color --tail=250
+
+      - name: Cleanup
+        if: always()
+        run: docker compose -f runtime/e2e/docker-compose.yml down -v --remove-orphans

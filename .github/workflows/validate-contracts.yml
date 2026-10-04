@@ -49,6 +49,10 @@ jobs:
           grep -q 'traces_endpoint: "__OTEL_TRACES_ENDPOINT__"' runtime/shared-platform/kong/kong.template.yml
           grep -q 'keycloak-service.keycloak-system.svc:8080' runtime/shared-platform/manifests/payment-api.yaml
           grep -q 'otel-collector.shared-observability.svc:4318' runtime/shared-platform/capability-consumption.yaml
+          grep -q '__D090_AI_ACCESS_SERVICE__' runtime/shared-platform/kong/kong.template.yml
+          grep -q 'D090_AI_ACCESS_ENABLED' runtime/shared-platform/scripts/render-kong-config.sh
+          grep -q 'ai-access-policy.tradeops.svc:8020' runtime/shared-platform/scripts/render-kong-config.sh
+          grep -q 'D090_KONG_AI_ROUTE=PASS' runtime/shared-platform/scripts/enable-d090-ai-access-crc.sh
 
       - name: Architecture deliverables gate
         run: |

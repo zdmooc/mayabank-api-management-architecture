@@ -53,6 +53,8 @@ jobs:
           grep -q 'D090_AI_ACCESS_ENABLED' runtime/shared-platform/scripts/render-kong-config.sh
           grep -q 'ai-access-policy.tradeops.svc:8020' runtime/shared-platform/scripts/render-kong-config.sh
           grep -q 'D090_KONG_AI_ROUTE=PASS' runtime/shared-platform/scripts/enable-d090-ai-access-crc.sh
+          bash -n runtime/shared-platform/scripts/render-kong-config.sh
+          bash -n runtime/shared-platform/scripts/enable-d090-ai-access-crc.sh
 
       - name: Architecture deliverables gate
         run: |

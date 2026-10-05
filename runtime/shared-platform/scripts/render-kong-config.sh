@@ -66,6 +66,12 @@ rendered=(template
 print(rendered,end="")
 PY
 
-oc -n mayabank-api create configmap kong-config --from-file=kong.yml="${OUT}" --dry-run=client -o yaml | oc apply -f - >/dev/null
-rm -f "${OUT}"
-echo "KONG_SHARED_CONFIG_RENDER=PASS"
+if [[ -n "${KONG_CONFIG_OUTPUT_FILE:-}" ]]; then
+  cp "${OUT}" "${KONG_CONFIG_OUTPUT_FILE}"
+  rm -f "${OUT}"
+  echo "KONG_SHARED_CONFIG_RENDER=PASS mode=file"
+else
+  oc -n mayabank-api create configmap kong-config --from-file=kong.yml="${OUT}" --dry-run=client -o yaml | oc apply -f - >/dev/null
+  rm -f "${OUT}"
+  echo "KONG_SHARED_CONFIG_RENDER=PASS mode=configmap"
+fi

@@ -7,7 +7,8 @@ cd "${ROOT_DIR}"
 NAMESPACE="${API_NAMESPACE:-mayabank-api}"
 DEPLOY="${KONG_DEPLOYMENT:-api-gateway}"
 ADMIN_LOCAL_PORT="${KONG_ADMIN_LOCAL_PORT:-18001}"
-BACKUP="$(mktemp)"
+
+BASELINE="$(mktemp)"
 RENDERED="$(mktemp)"
 PF_LOG="$(mktemp)"
 PF_PID=""
@@ -17,24 +18,47 @@ cleanup() {
     kill "${PF_PID}" >/dev/null 2>&1 || true
     wait "${PF_PID}" >/dev/null 2>&1 || true
   fi
-  rm -f "${BACKUP}" "${RENDERED}" "${PF_LOG}" /tmp/d090-no-token.json /tmp/d090-kong-admin.json
+  rm -f "${BASELINE}" "${RENDERED}" "${PF_LOG}"     /tmp/d090-no-token.json /tmp/d090-kong-admin.json
 }
 trap cleanup EXIT
 
+diag_kong() {
+  echo "===== KONG DIAGNOSTICS =====" >&2
+  oc -n "${NAMESPACE}" get deploy,rs,pods -l app=api-gateway -o wide >&2 || true
+  oc -n "${NAMESPACE}" describe deploy "${DEPLOY}" >&2 || true
+  oc -n "${NAMESPACE}" describe pods -l app=api-gateway >&2 || true
+  oc -n "${NAMESPACE}" logs -l app=api-gateway --tail=200 --prefix >&2 || true
+  oc -n "${NAMESPACE}" logs -l app=api-gateway --previous --tail=200 --prefix >&2 || true
+  oc -n "${NAMESPACE}" get events --sort-by=.lastTimestamp | tail -n 120 >&2 || true
+}
+
 oc -n keycloak-system wait --for=condition=Ready keycloak/keycloak --timeout=60s >/dev/null
 oc -n tradeops wait --for=condition=Available deploy/ai-access-policy --timeout=120s >/dev/null
-oc -n "${NAMESPACE}" wait --for=condition=Available "deploy/${DEPLOY}" --timeout=120s >/dev/null
 
-# Save the last known-good declarative configuration.
-oc -n "${NAMESPACE}" get cm kong-config -o jsonpath='{.data.kong\.yml}' > "${BACKUP}"
+# Always render the known-good baseline from Git. This avoids trusting a ConfigMap
+# that may have been left with an unproven D-090 extension after a failed restart.
+D090_AI_ACCESS_ENABLED=false KONG_CONFIG_OUTPUT_FILE="${BASELINE}"   bash runtime/shared-platform/scripts/render-kong-config.sh
 
-# Render the opt-in /ai service into the canonical Kong ConfigMap.
-D090_AI_ACCESS_ENABLED=true bash runtime/shared-platform/scripts/render-kong-config.sh
-oc -n "${NAMESPACE}" get cm kong-config -o jsonpath='{.data.kong\.yml}' > "${RENDERED}"
+# If Kong is currently unhealthy, recover it first with the baseline config.
+if ! oc -n "${NAMESPACE}" wait --for=condition=Available "deploy/${DEPLOY}" --timeout=10s >/dev/null 2>&1; then
+  echo "D090_KONG_RECOVERY=START"
+  oc -n "${NAMESPACE}" create configmap kong-config     --from-file=kong.yml="${BASELINE}"     --dry-run=client -o yaml | oc apply -f - >/dev/null
+  oc apply -f runtime/shared-platform/manifests/kong.yaml >/dev/null
+  oc -n "${NAMESPACE}" rollout restart "deploy/${DEPLOY}" >/dev/null
+  if ! oc -n "${NAMESPACE}" rollout status "deploy/${DEPLOY}" --timeout=600s; then
+    diag_kong
+    echo "D090_KONG_RECOVERY=FAIL" >&2
+    exit 1
+  fi
+  echo "D090_KONG_RECOVERY=PASS"
+else
+  echo "D090_KONG_RECOVERY=NOT_NEEDED"
+fi
 
-# Use the internal Admin API through a local port-forward. This avoids replacing
-# the Kong pod on the constrained single-node CRC. The ConfigMap remains the
-# persisted source for the next normal pod restart.
+# Render the candidate /ai config to a file only. Do NOT persist it yet.
+D090_AI_ACCESS_ENABLED=true KONG_CONFIG_OUTPUT_FILE="${RENDERED}"   bash runtime/shared-platform/scripts/render-kong-config.sh
+
+# Reach Kong Admin API without exposing it as an OpenShift Route.
 oc -n "${NAMESPACE}" port-forward svc/api-gateway "${ADMIN_LOCAL_PORT}:8001" >"${PF_LOG}" 2>&1 &
 PF_PID="$!"
 
@@ -62,11 +86,11 @@ reload_config() {
   [[ "${code}" == "200" || "${code}" == "201" ]]
 }
 
+# Kong itself parses/validates the declarative candidate before we persist it.
 if ! reload_config "${RENDERED}"; then
   echo "D090_KONG_HOT_RELOAD=FAIL" >&2
   cat /tmp/d090-kong-admin.json >&2 || true
-  oc -n "${NAMESPACE}" create configmap kong-config     --from-file=kong.yml="${BACKUP}"     --dry-run=client -o yaml | oc apply -f - >/dev/null
-  reload_config "${BACKUP}" >/dev/null 2>&1 || true
+  reload_config "${BASELINE}" >/dev/null 2>&1 || true
   exit 1
 fi
 echo "D090_KONG_HOT_RELOAD=PASS"
@@ -77,12 +101,16 @@ NO_TOKEN_CODE="$(curl -ksS -o /tmp/d090-no-token.json -w '%{http_code}'   -X POS
 if [[ "${NO_TOKEN_CODE}" != "401" ]]; then
   echo "D090_KONG_NO_TOKEN_DENY=FAIL http=${NO_TOKEN_CODE}" >&2
   cat /tmp/d090-no-token.json >&2 || true
-  echo "===== ROLLBACK CANONICAL KONG CONFIG =====" >&2
-  oc -n "${NAMESPACE}" create configmap kong-config     --from-file=kong.yml="${BACKUP}"     --dry-run=client -o yaml | oc apply -f - >/dev/null
-  reload_config "${BACKUP}" >/dev/null 2>&1 || true
+  reload_config "${BASELINE}" >/dev/null 2>&1 || true
+  echo "D090_KONG_HOT_ROLLBACK=PASS" >&2
   exit 1
 fi
 
 echo "D090_KONG_AI_ROUTE=PASS"
 echo "D090_KONG_NO_TOKEN_DENY=PASS"
+
+# Only after the runtime candidate passed do we persist it for future restarts.
+oc -n "${NAMESPACE}" create configmap kong-config   --from-file=kong.yml="${RENDERED}"   --dry-run=client -o yaml | oc apply -f - >/dev/null
+
+echo "D090_KONG_CONFIG_PERSIST=PASS"
 echo "D090_G1A_KONG=PASS"

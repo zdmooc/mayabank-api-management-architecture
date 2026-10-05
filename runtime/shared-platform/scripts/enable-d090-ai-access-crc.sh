@@ -25,25 +25,61 @@ D090_AI_ACCESS_ENABLED=true bash runtime/shared-platform/scripts/render-kong-con
 # Validate the rendered DB-less configuration with the same Kong image before restart.
 KONG_IMAGE="$(oc -n "${NAMESPACE}" get deploy "${DEPLOY}" -o jsonpath='{.spec.template.spec.containers[0].image}')"
 TMP_CM="d090-kong-validate-$(date +%s)"
-oc -n "${NAMESPACE}" create configmap "${TMP_CM}"   --from-file=kong.yml=<(oc -n "${NAMESPACE}" get cm kong-config -o jsonpath='{.data.kong\.yml}')   >/dev/null
-oc -n "${NAMESPACE}" run d090-kong-config-check --rm -i --restart=Never   --image="${KONG_IMAGE}"   --overrides="$(python3 - "${TMP_CM}" <<'PY'
-import json, sys
-cm=sys.argv[1]
-print(json.dumps({
-  "spec":{
-    "automountServiceAccountToken":False,
-    "containers":[{
-      "name":"check",
-      "image":"PLACEHOLDER",
-      "command":["sh","-ec","kong config parse /kong/declarative/kong.yml >/dev/null && echo D090_KONG_CONFIG_PARSE=PASS"],
-      "volumeMounts":[{"name":"config","mountPath":"/kong/declarative","readOnly":True}],
-      "securityContext":{"allowPrivilegeEscalation":False,"capabilities":{"drop":["ALL"]},"runAsNonRoot":True}
-    }],
-    "volumes":[{"name":"config","configMap":{"name":cm}}]
-  }
-}))
-PY
-)"   --command -- sh -ec 'kong config parse /kong/declarative/kong.yml >/dev/null && echo D090_KONG_CONFIG_PARSE=PASS'
+TMP_POD="d090-kong-config-check"
+TMP_CFG="$(mktemp)"
+oc -n "${NAMESPACE}" get cm kong-config -o jsonpath='{.data.kong\.yml}' > "${TMP_CFG}"
+oc -n "${NAMESPACE}" create configmap "${TMP_CM}"   --from-file=kong.yml="${TMP_CFG}" >/dev/null
+rm -f "${TMP_CFG}"
+
+oc -n "${NAMESPACE}" delete pod "${TMP_POD}" --ignore-not-found >/dev/null
+cat <<EOF | oc -n "${NAMESPACE}" apply -f - >/dev/null
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ${TMP_POD}
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: check
+      image: ${KONG_IMAGE}
+      command: ["sh", "-ec"]
+      args:
+        - kong config parse /kong/declarative/kong.yml >/dev/null && echo D090_KONG_CONFIG_PARSE=PASS
+      volumeMounts:
+        - name: config
+          mountPath: /kong/declarative
+          readOnly: true
+      resources:
+        requests: {cpu: 10m, memory: 64Mi}
+        limits: {cpu: 250m, memory: 256Mi}
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+        runAsNonRoot: true
+  volumes:
+    - name: config
+      configMap:
+        name: ${TMP_CM}
+EOF
+
+if ! oc -n "${NAMESPACE}" wait --for=condition=Ready "pod/${TMP_POD}" --timeout=180s >/dev/null 2>&1; then
+  oc -n "${NAMESPACE}" get pod "${TMP_POD}" -o wide >&2 || true
+  oc -n "${NAMESPACE}" describe pod "${TMP_POD}" >&2 || true
+fi
+if ! oc -n "${NAMESPACE}" wait --for=jsonpath='{.status.phase}'=Succeeded "pod/${TMP_POD}" --timeout=180s >/dev/null; then
+  oc -n "${NAMESPACE}" logs "${TMP_POD}" >&2 || true
+  oc -n "${NAMESPACE}" delete pod "${TMP_POD}" --ignore-not-found >/dev/null
+  oc -n "${NAMESPACE}" delete cm "${TMP_CM}" --ignore-not-found >/dev/null
+  echo "D090_KONG_CONFIG_PARSE=FAIL" >&2
+  exit 1
+fi
+oc -n "${NAMESPACE}" logs "${TMP_POD}"
+oc -n "${NAMESPACE}" delete pod "${TMP_POD}" --ignore-not-found >/dev/null
 oc -n "${NAMESPACE}" delete cm "${TMP_CM}" --ignore-not-found >/dev/null
 
 oc -n "${NAMESPACE}" rollout restart "deploy/${DEPLOY}"

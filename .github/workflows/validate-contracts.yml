@@ -56,6 +56,7 @@ jobs:
           grep -q 'KONG_CONFIG_OUTPUT_FILE' runtime/shared-platform/scripts/render-kong-config.sh
           grep -q 'D090_KONG_RECOVERY=PASS' runtime/shared-platform/scripts/enable-d090-ai-access-crc.sh
           grep -q 'D090_KONG_CONFIG_PERSIST=PASS' runtime/shared-platform/scripts/enable-d090-ai-access-crc.sh
+          ! grep -q 'hide_credentials' runtime/shared-platform/scripts/render-kong-config.sh
           bash -n runtime/shared-platform/scripts/render-kong-config.sh
           bash -n runtime/shared-platform/scripts/enable-d090-ai-access-crc.sh
 

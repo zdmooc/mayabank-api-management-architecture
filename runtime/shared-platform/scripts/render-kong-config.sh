@@ -56,7 +56,6 @@ if os.environ.get("D090_AI_ACCESS_ENABLED","false").lower() == "true":
           key_claim_name: iss
           claims_to_verify:
             - exp
-          hide_credentials: false
 """
 rendered=(template
   .replace("__KEYCLOAK_ISSUER__",os.environ["ISSUER"])

@@ -78,9 +78,10 @@ fi
 echo "D090_KONG_ADMIN_PORT_FORWARD=PASS"
 
 reload_config() {
-  local cfg="$1" body code
+  local cfg="$1" body code config_text
   body="$(mktemp)"
-  code="$(curl -sS -o "${body}" -w '%{http_code}'     -X POST "http://127.0.0.1:${ADMIN_LOCAL_PORT}/config"     -F "config=@${cfg};type=text/yaml")"
+  config_text="$(cat "${cfg}")"
+  code="$(curl -sS -o "${body}" -w '%{http_code}'     -X POST "http://127.0.0.1:${ADMIN_LOCAL_PORT}/config"     --form-string "config=${config_text}")"
   cat "${body}" > /tmp/d090-kong-admin.json
   rm -f "${body}"
   [[ "${code}" == "200" || "${code}" == "201" ]]

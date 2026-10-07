@@ -7,7 +7,7 @@ cd "${ROOT_DIR}"
 KEYCLOAK_URL="${KEYCLOAK_URL:-https://keycloak.apps-crc.testing}"
 REALM="${SHARED_REALM:-mayabank}"
 OTEL_TRACES_ENDPOINT="${OTEL_TRACES_ENDPOINT:-http://otel-collector.shared-observability.svc:4318/v1/traces}"
-ISSUER="${KEYCLOAK_URL}/realms/${REALM}"
+ISSUER="${KEYCLOAK_ISSUER_OVERRIDE:-${KEYCLOAK_URL}/realms/${REALM}}"
 D090_AI_ACCESS_ENABLED="${D090_AI_ACCESS_ENABLED:-false}"
 
 REALM_JSON="$(curl -kfsS "${KEYCLOAK_URL}/realms/${REALM}")"

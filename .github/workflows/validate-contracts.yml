@@ -51,6 +51,7 @@ jobs:
           grep -q 'otel-collector.shared-observability.svc:4318' runtime/shared-platform/capability-consumption.yaml
           grep -q '__D090_AI_ACCESS_SERVICE__' runtime/shared-platform/kong/kong.template.yml
           grep -q 'D090_AI_ACCESS_ENABLED' runtime/shared-platform/scripts/render-kong-config.sh
+          grep -q 'KEYCLOAK_ISSUER_OVERRIDE' runtime/shared-platform/scripts/render-kong-config.sh
           grep -q 'ai-access-policy.tradeops.svc:8020' runtime/shared-platform/scripts/render-kong-config.sh
           grep -q 'D090_KONG_AI_ROUTE=PASS' runtime/shared-platform/scripts/enable-d090-ai-access-crc.sh
           grep -q 'KONG_CONFIG_OUTPUT_FILE' runtime/shared-platform/scripts/render-kong-config.sh

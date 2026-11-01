@@ -10,6 +10,13 @@ consumers:
         rsa_public_key: |-
 __KEYCLOAK_PUBLIC_KEY_INDENTED__
 
+  - username: partner-b-client
+    jwt_secrets:
+      - key: "partner-b-client"
+        algorithm: RS256
+        secret: "unused-for-rs256"
+        rsa_public_key: |-
+__KEYCLOAK_PUBLIC_KEY_INDENTED__
   - username: read-only-client
     jwt_secrets:
       - key: "read-only-client"

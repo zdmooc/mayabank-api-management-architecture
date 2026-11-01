@@ -2,9 +2,24 @@ _format_version: "3.0"
 _transform: true
 
 consumers:
-  - username: mayabank-keycloak
+  - username: payment-client
     jwt_secrets:
-      - key: "__KEYCLOAK_ISSUER__"
+      - key: "payment-client"
+        algorithm: RS256
+        secret: "unused-for-rs256"
+        rsa_public_key: |-
+__KEYCLOAK_PUBLIC_KEY_INDENTED__
+
+  - username: read-only-client
+    jwt_secrets:
+      - key: "read-only-client"
+        algorithm: RS256
+        secret: "unused-for-rs256"
+        rsa_public_key: |-
+__KEYCLOAK_PUBLIC_KEY_INDENTED__
+  - username: wrong-audience-client
+    jwt_secrets:
+      - key: "wrong-audience-client"
         algorithm: RS256
         secret: "unused-for-rs256"
         rsa_public_key: |-
@@ -34,6 +49,7 @@ services:
         config:
           minute: __RATE_LIMIT_PER_MINUTE__
           policy: local
+          limit_by: consumer
 
       - name: request-size-limiting
         config:
@@ -42,6 +58,6 @@ services:
 
       - name: jwt
         config:
-          key_claim_name: iss
+          key_claim_name: azp
           claims_to_verify:
             - exp

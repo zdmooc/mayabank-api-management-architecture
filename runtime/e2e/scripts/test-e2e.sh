@@ -149,6 +149,12 @@ done
 test "${RATE_LIMIT_SEEN}" = "1"
 echo "KONG_RATE_LIMIT_429=PASS"
 
+# The other authenticated consumer must not inherit payment-client's exhausted quota.
+OTHER_CLIENT_CODE="$(curl -sS -o /tmp/other-client-quota.json -w '%{http_code}' \
+  "${GW_URL}/payments/${PAYMENT_ID}" -H "Authorization: Bearer ${READ_ONLY_TOKEN}")"
+test "${OTHER_CLIENT_CODE}" = "404"
+echo "KONG_PER_CLIENT_RATE_LIMIT_ISOLATED=PASS"
+
 BAD_TOKEN="${TOKEN%?}x"
 BAD_CODE="$(curl -sS -o /tmp/bad-token.json -w '%{http_code}'   "${GW_URL}/payments/${PAYMENT_ID}"   -H "Authorization: Bearer ${BAD_TOKEN}")"
 test "${BAD_CODE}" = "401"

@@ -36,7 +36,7 @@
 | Kong consumer-scoped rate limiting (PR branch) | PR_CI_RUNTIME_PROVEN_E2E | E2E run `41351896282`, client B not blocked after A's 429 |
 | Kong Admin API CRC network isolation (PR branch) | STATIC_VALIDATED / CRC_NOT_RETESTED | Manifest gate, localhost Admin 8001, separate status 8100 |
 | Keycloak signing-key rotation and overlap | NOT_PROVEN | Static Kong public key; no runtime rotation test |
-| CRC CA verification and trace-specific OTel assertions | NOT_PROVEN | Original tests use curl -k and generic collector logs |
+| CRC CA verification and trace-specific OTel assertions | STATIC_IMPLEMENTED / CRC_NOT_RETESTED | Hardened test now uses explicit trusted CA (opt-out marked insecure) and unique trace ID; no live CRC evidence yet |
 | Production readiness | NOT_CLAIMED | — |
 
 ## Primary runtime evidence

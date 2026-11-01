@@ -38,7 +38,7 @@ No fixed credential is committed. The GitHub Actions workflow generates:
 - Keycloak bootstrap admin password;
 - service client secret.
 
-Kong selects a separate JWT consumer by the signed `azp` claim for each of the three CI lab clients. Per-consumer quotas only apply to the single-instance E2E fixture; they are not distributed quotas. Kong's RS256 credentials use the Keycloak realm **public** key generated at runtime. The placeholder `secret` required by Kong declarative JWT credentials is not used for RS256 verification.
+Kong selects a separate JWT consumer by the signed `azp` claim for each of the four CI lab clients. Per-consumer quotas only apply to the single-instance E2E fixture; they are not distributed quotas. Kong's RS256 credentials use the Keycloak realm **public** key generated at runtime. The placeholder `secret` required by Kong declarative JWT credentials is not used for RS256 verification.
 
 ## Product boundary
 
@@ -55,6 +55,7 @@ Kong OSS JWT validates signature and selected registered claims. In CI, it selec
 ```bash
 export KC_BOOTSTRAP_ADMIN_PASSWORD="$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')"
 export PAYMENT_CLIENT_SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+export PARTNER_CLIENT_SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
 export READ_ONLY_CLIENT_SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
 export WRONG_AUDIENCE_CLIENT_SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
 

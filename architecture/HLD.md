@@ -1,7 +1,7 @@
 # HLD — MayaBank API Management Reference Architecture
 
 **Classification:** REFERENCE_DESIGN  
-**Runtime status:** NOT_RUNTIME_PROVEN
+**Runtime status:** REFERENCE_DESIGN; bounded CI E2E and CRC lab runtime demonstrated for the 2026-10-02 baseline. Target HA, Kafka and production remain NOT_PROVEN.
 
 ## 1. Purpose
 
@@ -54,7 +54,7 @@ Customer / Mobile / Web / Partner
 2. Edge to API gateway.
 3. API gateway to application namespace.
 4. Application to IAM, event platform, database and payment systems.
-5. Administrative/control-plane access separated from traffic data plane.
+5. Administrative/control-plane access must be restricted from the data plane; CRC hardening removes the Admin API Service endpoint, but post-change runtime proof is pending.
 
 Authentication at the gateway does not replace object- or business-level authorization in the backend.
 

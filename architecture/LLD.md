@@ -1,7 +1,7 @@
 # LLD — MayaBank API Management Reference Implementation
 
 **Classification:** REFERENCE_DESIGN / IMPLEMENTATION_CONTRACT  
-**Runtime status:** standalone CI = CI_RUNTIME_PROVEN_E2E; shared-platform CRC profile = IMPLEMENTED / STATIC_VALIDATED
+**Runtime status:** historical standalone CI and CRC runs proved the bounded 2026-10-02 baseline; changes on the hardening PR require fresh CI/CRC evidence.
 
 ## 1. Scope
 
@@ -56,10 +56,10 @@ Minimum fields: `eventId`, `paymentId`, `status`, `occurredAt`.
 1. Consumer resolves the public API endpoint.
 2. Edge/WAF applies perimeter controls.
 3. Gateway validates transport and schema/policy prerequisites.
-4. Gateway validates issuer, signature, expiry and audience; scope checks may be applied.
+4. In the Kong OSS lab, JWT plugin selects a credential using the configured JWT claim, verifies RS256 signature and `exp`. It does **not** validate `aud` or OAuth scopes. The Payment API verifies `iss`, `aud`, `exp`, required scope and the authenticated client identity.
 5. Gateway forwards a controlled identity/security context.
-6. Payment API performs business/object authorization.
-7. For create, API validates idempotency and persists/reads command state.
+6. Payment API checks that each payment belongs to the authenticated `azp` client before returning it (cross-client reads return 404).
+7. Payment API validates the request and performs an atomic in-process lookup/create keyed by (client identity, operation, idempotency key); a payload hash mismatch returns 409. This lab's in-memory store is NOT durable or multi-process-safe.
 8. Payment dependency is invoked.
 9. State change is emitted to the event platform.
 10. Correlation/tracing data is propagated across the chain.
@@ -104,7 +104,7 @@ payment-api -> datastore
 runtime -> observability
 ```
 
-Default-deny network policy is preferred where the platform permits it.
+The CRC hardening branch removes port 8001 from Kong Service, binds the Admin API to pod loopback, and exposes a separate status listener on port 8100 for probes. Only the proxy port is routed externally. This change remains unproven on CRC until explicitly retested.
 
 ## 9. Secrets
 
@@ -193,4 +193,4 @@ Runtime contract:
 - Keycloak runtime lifecycle remains specialist-owned;
 - OTel collector lifecycle remains shared-platform-owned.
 
-This profile is not promoted to CRC runtime evidence until the deployment and test scripts are observed successfully on the real CRC cluster.
+The original profile **was observed** on CRC on 2026-10-02 (`evidence/crc/API-MANAGEMENT-SHARED-PLATFORM-CRC-2026-10-02.md`). New security changes on the hardening branch are **NOT YET CRC-RUNTIME-PROVEN** and must be retested before promotion.

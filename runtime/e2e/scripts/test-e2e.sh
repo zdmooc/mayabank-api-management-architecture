@@ -4,6 +4,7 @@ set -euo pipefail
 : "${PAYMENT_CLIENT_SECRET:?set PAYMENT_CLIENT_SECRET}"
 : "${READ_ONLY_CLIENT_SECRET:?set READ_ONLY_CLIENT_SECRET}"
 : "${WRONG_AUDIENCE_CLIENT_SECRET:?set WRONG_AUDIENCE_CLIENT_SECRET}"
+: "${PARTNER_CLIENT_SECRET:?set PARTNER_CLIENT_SECRET}"
 
 KC_URL="${KEYCLOAK_EXTERNAL_URL:-http://localhost:8080}"
 GW_URL="${KONG_PROXY_URL:-http://localhost:8000}"
@@ -74,6 +75,30 @@ CONFLICT_CODE="$(curl -sS -o /tmp/idempotency-conflict.json -w '%{http_code}' -X
 test "${CONFLICT_CODE}" = "409"
 test "$(jq -r '.code' /tmp/idempotency-conflict.json)" = "idempotency_payload_mismatch"
 echo "PAYMENT_IDEMPOTENCY_CONFLICT=PASS"
+
+PARTNER_RESPONSE="$(curl -fsS -X POST "${KC_URL}/realms/mayabank/protocol/openid-connect/token" \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  --data-urlencode 'client_id=partner-b-client' \
+  --data-urlencode "client_secret=${PARTNER_CLIENT_SECRET}" \
+  --data-urlencode 'grant_type=client_credentials')"
+PARTNER_TOKEN="$(PARTNER_RESPONSE="${PARTNER_RESPONSE}" python3 - <<'PY'
+import json, os
+print(json.loads(os.environ["PARTNER_RESPONSE"])["access_token"])
+PY
+)"
+curl -fsS -o /tmp/partner-create.json -X POST "${GW_URL}/payments" \
+  -H "Authorization: Bearer ${PARTNER_TOKEN}" -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: ${IDEM}" --data "${PAYLOAD}"
+PARTNER_PAYMENT_ID="$(jq -r '.paymentId' /tmp/partner-create.json)"
+test -n "${PARTNER_PAYMENT_ID}" && test "${PARTNER_PAYMENT_ID}" != "${PAYMENT_ID}"
+PARTNER_CANNOT_READ_A="$(curl -sS -o /tmp/partner-bola.json -w '%{http_code}' \
+  "${GW_URL}/payments/${PAYMENT_ID}" -H "Authorization: Bearer ${PARTNER_TOKEN}")"
+test "${PARTNER_CANNOT_READ_A}" = "404"
+A_CANNOT_READ_PARTNER="$(curl -sS -o /tmp/a-bola.json -w '%{http_code}' \
+  "${GW_URL}/payments/${PARTNER_PAYMENT_ID}" -H "Authorization: Bearer ${TOKEN}")"
+test "${A_CANNOT_READ_PARTNER}" = "404"
+echo "PAYMENT_CROSS_CLIENT_IDEMPOTENCY_AND_BOLA=PASS"
+
 
 curl -fsS "${GW_URL}/payments/${PAYMENT_ID}"   -H "Authorization: Bearer ${TOKEN}"   | jq -e --arg id "${PAYMENT_ID}" '.paymentId == $id and .status == "ACCEPTED"' >/dev/null
 echo "PAYMENT_READ_SCOPE=PASS"
@@ -160,5 +185,5 @@ BAD_CODE="$(curl -sS -o /tmp/bad-token.json -w '%{http_code}'   "${GW_URL}/payme
 test "${BAD_CODE}" = "401"
 echo "KONG_INVALID_SIGNATURE_REJECTED=PASS"
 
-unset TOKEN TOKEN_RESPONSE READ_ONLY_TOKEN READ_ONLY_TOKEN_RESPONSE WRONG_AUD_TOKEN WRONG_AUD_TOKEN_RESPONSE
+unset TOKEN TOKEN_RESPONSE READ_ONLY_TOKEN READ_ONLY_TOKEN_RESPONSE WRONG_AUD_TOKEN WRONG_AUD_TOKEN_RESPONSE PARTNER_TOKEN PARTNER_RESPONSE
 echo "API_MANAGEMENT_E2E_RUNTIME=PASS"

@@ -162,6 +162,20 @@ OVERSIZE_CODE="$(curl -sS -o /tmp/oversized-response.json -w '%{http_code}' -X P
 test "${OVERSIZE_CODE}" = "413"
 echo "KONG_REQUEST_SIZE_LIMIT=PASS"
 
+# Mutate a significant base64url digit of the JWT signature (not the trailing
+# padding bits, where changing a character may leave decoded bytes unchanged).
+BAD_TOKEN="$(TOKEN="${TOKEN}" python3 - <<'PY'
+import os
+header, payload, signature = os.environ["TOKEN"].split(".")
+changed = ("A" if signature[0] != "A" else "B") + signature[1:]
+print(".".join([header, payload, changed]))
+PY
+)"
+BAD_CODE="$(curl -sS -o /tmp/bad-token.json -w '%{http_code}' \
+  "${GW_URL}/payments/${PAYMENT_ID}" -H "Authorization: Bearer ${BAD_TOKEN}")"
+test "${BAD_CODE}" = "401"
+echo "KONG_INVALID_SIGNATURE_REJECTED=PASS"
+
 RATE_LIMIT_SEEN=0
 for i in $(seq 1 30); do
   code="$(curl -sS -o /tmp/rate-limit.json -w '%{http_code}' "${GW_URL}/payments/${PAYMENT_ID}" -H "Authorization: Bearer ${TOKEN}")"
@@ -180,10 +194,7 @@ OTHER_CLIENT_CODE="$(curl -sS -o /tmp/other-client-quota.json -w '%{http_code}' 
 test "${OTHER_CLIENT_CODE}" = "404"
 echo "KONG_PER_CLIENT_RATE_LIMIT_ISOLATED=PASS"
 
-BAD_TOKEN="${TOKEN%?}x"
-BAD_CODE="$(curl -sS -o /tmp/bad-token.json -w '%{http_code}'   "${GW_URL}/payments/${PAYMENT_ID}"   -H "Authorization: Bearer ${BAD_TOKEN}")"
-test "${BAD_CODE}" = "401"
-echo "KONG_INVALID_SIGNATURE_REJECTED=PASS"
+
 
 unset TOKEN TOKEN_RESPONSE READ_ONLY_TOKEN READ_ONLY_TOKEN_RESPONSE WRONG_AUD_TOKEN WRONG_AUD_TOKEN_RESPONSE PARTNER_TOKEN PARTNER_RESPONSE
 echo "API_MANAGEMENT_E2E_RUNTIME=PASS"

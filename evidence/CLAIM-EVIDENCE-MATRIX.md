@@ -31,6 +31,12 @@
 | Kafka runtime in this repo | NOT_PROVEN | LAB-09 pending |
 | OpenShift runtime | CRC_RUNTIME_PROVEN_SHARED_PLATFORM_CONSUMER | shared-platform profile executed successfully on CRC 4.22.7 |
 | Full target architecture E2E | NOT_PROVEN | Kafka/OpenShift/HA not included in current CI proof |
+| Client-scoped payment object authorization / BOLA denial (PR branch) | PR_CI_RUNTIME_PROVEN_E2E | E2E run `41351896282`, two authenticated clients, cross-client GET => 404 |
+| Client-scoped idempotency and conflicting payload (PR branch) | PR_CI_RUNTIME_PROVEN_E2E | E2E run `41351896282`, isolated IDs and 409 mismatch |
+| Kong consumer-scoped rate limiting (PR branch) | PR_CI_RUNTIME_PROVEN_E2E | E2E run `41351896282`, client B not blocked after A's 429 |
+| Kong Admin API CRC network isolation (PR branch) | STATIC_VALIDATED / CRC_NOT_RETESTED | Manifest gate, localhost Admin 8001, separate status 8100 |
+| Keycloak signing-key rotation and overlap | NOT_PROVEN | Static Kong public key; no runtime rotation test |
+| CRC CA verification and trace-specific OTel assertions | NOT_PROVEN | Original tests use curl -k and generic collector logs |
 | Production readiness | NOT_CLAIMED | — |
 
 ## Primary runtime evidence
@@ -93,3 +99,15 @@ Allowed claim:
 `CRC_RUNTIME_PROVEN_SHARED_PLATFORM_CONSUMER`.
 
 Scope remains bounded to single-node CRC/OpenShift Local; HA, multi-node, production sizing, Kafka integration and production readiness remain unproven.
+
+## 2026-11-01 hardening PR evidence (not yet merged to main)
+
+- Branch: `fix/payment-security-and-kong-hardening-20261101`
+- Verified source commit: `44de4e4f1505bbcec05b810578afdf2f01f7eb1e`
+- E2E SUCCESS: https://github.com/zdmooc/mayabank-api-management-architecture/actions/runs/41351896282
+- Validate-contracts SUCCESS: https://github.com/zdmooc/mayabank-api-management-architecture/actions/runs/41351896301
+- Details: `evidence/ci/API-MANAGEMENT-SECURITY-HARDENING-2026-11-01.md`
+
+These are **CI proofs for the PR branch**. They do not retroactively prove CRC behavior
+for the changed Kong manifest, production readiness, distributed idempotency,
+or Keycloak key rollover.

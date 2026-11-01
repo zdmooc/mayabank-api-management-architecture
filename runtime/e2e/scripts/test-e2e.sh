@@ -19,7 +19,7 @@ done
 curl -fsS "${KONG_ADMIN_URL}/status" >/dev/null
 echo "KONG_ADMIN_READY=PASS"
 
-NO_TOKEN_CODE="$(curl -sS -o /tmp/no-token.json -w '%{http_code}'   -X POST "${GW_URL}/payments"   -H 'Content-Type: application/json'   -H 'Idempotency-Key: 1111111111111111'   --data '{"debtorAccountId":"D1","creditorIban":"FR761234567890","amount":{"value":"10.00","currency":"EUR"}}')"
+NO_TOKEN_CODE="$(curl -sS -o /tmp/no-token.json -w '%{http_code}'   -X POST "${GW_URL}/payments"   -H 'Content-Type: application/json'   -H 'Idempotency-Key: 1111111111111111'   --data '{"debtorAccountId":"D1","creditorIban":"FR7630006000011234567890189","amount":{"value":"10.00","currency":"EUR"}}')"
 
 test "${NO_TOKEN_CODE}" = "401"
 echo "KONG_JWT_MISSING_REJECTED=PASS"
@@ -49,7 +49,7 @@ assert {"payments.write","payments.read"}.issubset(scopes)
 PY
 echo "KEYCLOAK_CLIENT_CREDENTIALS_SCOPE_AUDIENCE=PASS"
 
-PAYLOAD='{"debtorAccountId":"D1","creditorIban":"FR761234567890","amount":{"value":"10.00","currency":"EUR"}}'
+PAYLOAD='{"debtorAccountId":"D1","creditorIban":"FR7630006000011234567890189","amount":{"value":"10.00","currency":"EUR"}}'
 IDEM="e2e-idempotency-0001"
 
 curl -fsS -D /tmp/create-headers.txt -o /tmp/create.json   -X POST "${GW_URL}/payments"   -H "Authorization: Bearer ${TOKEN}"   -H 'Content-Type: application/json'   -H "Idempotency-Key: ${IDEM}"   --data "${PAYLOAD}"
@@ -66,6 +66,14 @@ curl -fsS -D /tmp/replay-headers.txt -o /tmp/replay.json   -X POST "${GW_URL}/pa
 test "$(jq -r '.paymentId' /tmp/replay.json)" = "${PAYMENT_ID}"
 grep -qi '^Idempotency-Replayed: true' /tmp/replay-headers.txt
 echo "PAYMENT_IDEMPOTENCY_REPLAY=PASS"
+
+CHANGED_PAYLOAD='{"debtorAccountId":"D1","creditorIban":"FR7630006000011234567890189","amount":{"value":"100.00","currency":"EUR"}}'
+CONFLICT_CODE="$(curl -sS -o /tmp/idempotency-conflict.json -w '%{http_code}' -X POST "${GW_URL}/payments" \
+  -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: ${IDEM}" --data "${CHANGED_PAYLOAD}")"
+test "${CONFLICT_CODE}" = "409"
+test "$(jq -r '.code' /tmp/idempotency-conflict.json)" = "idempotency_payload_mismatch"
+echo "PAYMENT_IDEMPOTENCY_CONFLICT=PASS"
 
 curl -fsS "${GW_URL}/payments/${PAYMENT_ID}"   -H "Authorization: Bearer ${TOKEN}"   | jq -e --arg id "${PAYMENT_ID}" '.paymentId == $id and .status == "ACCEPTED"' >/dev/null
 echo "PAYMENT_READ_SCOPE=PASS"
@@ -89,6 +97,11 @@ READ_ONLY_CODE="$(curl -sS -o /tmp/read-only.json -w '%{http_code}' -X POST "${G
 test "${READ_ONLY_CODE}" = "403"
 echo "PAYMENT_INSUFFICIENT_SCOPE_REJECTED=PASS"
 
+BOLA_CODE="$(curl -sS -o /tmp/cross-client.json -w '%{http_code}' \
+  "${GW_URL}/payments/${PAYMENT_ID}" -H "Authorization: Bearer ${READ_ONLY_TOKEN}")"
+test "${BOLA_CODE}" = "404"
+echo "PAYMENT_CROSS_CLIENT_READ_DENIED=PASS"
+
 WRONG_AUD_TOKEN_RESPONSE="$(curl -fsS -X POST "${KC_URL}/realms/mayabank/protocol/openid-connect/token" \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   --data-urlencode 'client_id=wrong-audience-client' \
@@ -111,7 +124,7 @@ python3 - <<'PY' >/tmp/oversized-payment.json
 import json
 print(json.dumps({
   "debtorAccountId":"D1",
-  "creditorIban":"FR761234567890",
+  "creditorIban":"FR7630006000011234567890189",
   "amount":{"value":"10.00","currency":"EUR"},
   "padding":"x"*1100000
 }))

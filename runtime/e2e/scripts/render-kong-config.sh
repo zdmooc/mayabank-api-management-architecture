@@ -28,7 +28,7 @@ indented = "\n".join("          " + line for line in key.splitlines())
 
 rendered = (
     template.replace("__KEYCLOAK_ISSUER__", issuer)
-     .replace("__KEYCLOAK_PUBLIC_KEY_INDENTED__", indented)
+     .replaceAll("__KEYCLOAK_PUBLIC_KEY_INDENTED__", indented)
     .replace("__RATE_LIMIT_PER_MINUTE__", os.environ["RATE_LIMIT_PER_MINUTE"])
 )
 Path("runtime/e2e/generated/kong.yml").write_text(rendered, encoding="utf-8")

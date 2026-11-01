@@ -20,6 +20,290 @@ paths:
           schema:
             type: string
             minLength: 16
+            maxLength: 128
+            pattern: '^[A-Za-z0-9._:-]{16,128}      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '201':
+          description: Payment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+  /payments/{paymentId}:
+    get:
+      operationId: getPayment
+      summary: Get a payment
+      security:
+        - oauth2:
+            - payments.read
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://id.mayabank.example/token
+          scopes:
+            payments.read: Read payments
+            payments.write: Create payments
+  schemas:
+    PaymentRequest:
+      type: object
+      additionalProperties: false
+      required: [debtorAccountId, creditorIban, amount]
+      properties:
+        debtorAccountId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        creditorIban:
+          type: string
+          description: Uppercase international IBAN with valid MOD97 checksum (FR must be 27 characters).
+          pattern: '^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}
+        amount:
+          $ref: '#/components/schemas/Money'
+    Payment:
+      type: object
+      additionalProperties: false
+      required: [paymentId, status, amount]
+      properties:
+        paymentId:
+          type: string
+        status:
+          type: string
+          enum: [RECEIVED, ACCEPTED, REJECTED, SETTLED]
+        amount:
+          $ref: '#/components/schemas/Money'
+    Money:
+      type: object
+      additionalProperties: false
+      required: [value, currency]
+      properties:
+        value:
+          type: string
+          pattern: '^[0-9]+(\.[0-9]{1,2})?$'
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        correlationId: { type: string }
+        detail: { type: string }
+  responses:
+    Problem:
+      description: Problem response
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '201':
+          description: Payment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+  /payments/{paymentId}:
+    get:
+      operationId: getPayment
+      summary: Get a payment
+      security:
+        - oauth2:
+            - payments.read
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://id.mayabank.example/authorize
+          tokenUrl: https://id.mayabank.example/token
+          scopes:
+            payments.read: Read payments
+            payments.write: Create payments
+  schemas:
+    PaymentRequest:
+      type: object
+      additionalProperties: false
+      required: [debtorAccountId, creditorIban, amount]
+      properties:
+        debtorAccountId:
+          type: string
+        creditorIban:
+          type: string
+        amount:
+          $ref: '#/components/schemas/Money'
+    Payment:
+      type: object
+      additionalProperties: false
+      required: [paymentId, status, amount]
+      properties:
+        paymentId:
+          type: string
+        status:
+          type: string
+          enum: [RECEIVED, ACCEPTED, REJECTED, SETTLED]
+        amount:
+          $ref: '#/components/schemas/Money'
+    Money:
+      type: object
+      additionalProperties: false
+      required: [value, currency]
+      properties:
+        value:
+          type: string
+          pattern: '^[0-9]+(\.[0-9]{1,2})?$'
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        correlationId: { type: string }
+        detail: { type: string }
+  responses:
+    Problem:
+      description: Problem response
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+        amount:
+          $ref: '#/components/schemas/Money'
+    Payment:
+      type: object
+      additionalProperties: false
+      required: [paymentId, status, amount]
+      properties:
+        paymentId:
+          type: string
+        status:
+          type: string
+          enum: [RECEIVED, ACCEPTED, REJECTED, SETTLED]
+        amount:
+          $ref: '#/components/schemas/Money'
+    Money:
+      type: object
+      additionalProperties: false
+      required: [value, currency]
+      properties:
+        value:
+          type: string
+          pattern: '^[0-9]+(\.[0-9]{1,2})?$'
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        correlationId: { type: string }
+        detail: { type: string }
+  responses:
+    Problem:
+      description: Problem response
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
       requestBody:
         required: true
         content:

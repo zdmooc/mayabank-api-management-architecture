@@ -1,0 +1,15 @@
+{
+  "name": "mayabank-contract-lint",
+  "private": true,
+  "description": "Specification-level linting of the MayaBank OpenAPI and AsyncAPI contracts",
+  "type": "module",
+  "scripts": {
+    "lint:openapi": "redocly lint --config ../../redocly.yaml ../../apis/openapi/payment-api.yaml",
+    "lint:asyncapi": "node validate-asyncapi.mjs ../../apis/asyncapi/payment-events.yaml",
+    "lint": "npm run lint:openapi && npm run lint:asyncapi"
+  },
+  "devDependencies": {
+    "@asyncapi/parser": "3.6.6",
+    "@redocly/cli": "2.72.1"
+  }
+}

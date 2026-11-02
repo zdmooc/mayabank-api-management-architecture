@@ -1,5 +1,7 @@
 # Roadmap Architecte Solution API Management
 
+> Évolution du dépôt par profils runtime : voir [evolution-2026-2027.md](evolution-2026-2027.md). Statut des labs : [lab-status.md](lab-status.md).
+
 ## Priorités
 
 | Domaine | Priorité | Niveau cible /7 |

@@ -5,6 +5,7 @@ set -euo pipefail
 : "${PAYMENT_CLIENT_SECRET:?set PAYMENT_CLIENT_SECRET}"
 : "${READ_ONLY_CLIENT_SECRET:?set READ_ONLY_CLIENT_SECRET}"
 : "${WRONG_AUDIENCE_CLIENT_SECRET:?set WRONG_AUDIENCE_CLIENT_SECRET}"
+: "${UNREGISTERED_CLIENT_SECRET:?set UNREGISTERED_CLIENT_SECRET}"
 
 BASE_URL="${KEYCLOAK_EXTERNAL_URL:-http://localhost:8080}"
 
@@ -150,5 +151,36 @@ for scope in payments.write payments.read; do
   test "${code}" = "204"
 done
 
+# Valid OAuth2 client (right scopes and audience) that is NOT onboarded as a
+# Kong consumer: proves the gateway-level client allow-list.
+UNREGISTERED_SECRET="${UNREGISTERED_CLIENT_SECRET}" python3 - <<'PY' >/tmp/unregistered-client.json
+import json, os
+print(json.dumps({
+    "clientId": "unregistered-client",
+    "enabled": True,
+    "protocol": "openid-connect",
+    "publicClient": False,
+    "secret": os.environ["UNREGISTERED_SECRET"],
+    "serviceAccountsEnabled": True,
+    "fullScopeAllowed": False,
+    "standardFlowEnabled": False,
+    "directAccessGrantsEnabled": False
+}))
+PY
+admin_json POST /admin/realms/mayabank/clients "$(cat /tmp/unregistered-client.json)"
+UNREGISTERED_UUID="$(admin_get '/admin/realms/mayabank/clients?clientId=unregistered-client' | jq -r '.[0].id')"
+for scope in payments.write payments.read; do
+  SCOPE_ID="$(admin_get '/admin/realms/mayabank/client-scopes' | jq -r --arg n "${scope}" '.[] | select(.name == $n) | .id')"
+  code="$(curl -sS -o /tmp/unregistered-scope-link.out -w '%{http_code}' -X PUT "${BASE_URL}/admin/realms/mayabank/clients/${UNREGISTERED_UUID}/default-client-scopes/${SCOPE_ID}" -H "Authorization: Bearer ${ADMIN_TOKEN}")"
+  test "${code}" = "204"
+done
+admin_json POST "/admin/realms/mayabank/clients/${UNREGISTERED_UUID}/protocol-mappers/models" '{
+  "name":"payment-api-audience",
+  "protocol":"openid-connect",
+  "protocolMapper":"oidc-audience-mapper",
+  "config":{"included.client.audience":"payment-api","access.token.claim":"true"}
+}'
+
+rm -f /tmp/payment-client.json /tmp/read-only-client.json /tmp/wrong-audience-client.json /tmp/unregistered-client.json
 unset ADMIN_TOKEN
 echo "KEYCLOAK_E2E_BOOTSTRAP=PASS"

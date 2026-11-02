@@ -19,11 +19,25 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Validate OpenAPI
-        run: python scripts/validate_openapi.py apis/openapi/payment-api.yaml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
-      - name: Validate AsyncAPI
-        run: python scripts/validate_asyncapi.py apis/asyncapi/payment-events.yaml
+      - name: Lint OpenAPI (Redocly) and AsyncAPI (official parser)
+        working-directory: tools/contract-lint
+        run: |
+          npm ci --no-audit --no-fund
+          npm run lint
+
+      - name: Payment API unit and contract tests
+        run: |
+          pip install -r runtime/e2e/payment-api/requirements-test.txt
+          python -m pytest -q runtime/e2e/payment-api/tests
+
+      - name: Contract structure smoke checks
+        run: |
+          python scripts/validate_openapi.py apis/openapi/payment-api.yaml
+          python scripts/validate_asyncapi.py apis/asyncapi/payment-events.yaml
 
       - name: Secret hygiene
         run: python scripts/no_secrets_check.py
@@ -70,3 +84,5 @@ jobs:
           test -s diagrams/uml/sequence-payment-create.puml
           test -s diagrams/uml/deployment-openshift.puml
           test -s evidence/CLAIM-EVIDENCE-MATRIX.md
+          test -s 00-roadmap/evolution-2026-2027.md
+          test -s redocly.yaml

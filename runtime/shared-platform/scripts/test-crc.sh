@@ -40,11 +40,11 @@ GW_URL="https://${GW_HOST}"
 
 NO_TOKEN_CODE="$(curl -ksS -o /tmp/shared-no-token.json -w '%{http_code}' -X POST "${GW_URL}/payments" \
   -H 'Content-Type: application/json' -H 'Idempotency-Key: shared-no-token-0001' \
-  --data '{"debtorAccountId":"D1","creditorIban":"FR761234567890","amount":{"value":"10.00","currency":"EUR"}}')"
+  --data '{"debtorAccountId":"D1","creditorIban":"FR1420041010050500013M02606","amount":{"value":"10.00","currency":"EUR"}}')"
 test "${NO_TOKEN_CODE}" = "401"
 
 TRACE_START="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-PAYLOAD='{"debtorAccountId":"D1","creditorIban":"FR761234567890","amount":{"value":"10.00","currency":"EUR"}}'
+PAYLOAD='{"debtorAccountId":"D1","creditorIban":"FR1420041010050500013M02606","amount":{"value":"10.00","currency":"EUR"}}'
 IDEM="shared-crc-idempotency-0001"
 curl -kfsS -D /tmp/shared-create-headers.txt -o /tmp/shared-create.json -X POST "${GW_URL}/payments" \
   -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \

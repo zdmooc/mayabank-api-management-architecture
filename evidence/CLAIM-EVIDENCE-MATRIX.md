@@ -5,15 +5,16 @@
 | Capability | Current level | Evidence |
 |---|---|---|
 | API strategy / lifecycle / governance | REFERENCE_DESIGN | repository docs + review checklist |
-| REST/OpenAPI contract | STATIC_VALIDATED | `apis/openapi/payment-api.yaml` + validate-contracts CI |
-| AsyncAPI/event contract | STATIC_VALIDATED | `apis/asyncapi/payment-events.yaml` + validate-contracts CI |
+| REST/OpenAPI contract | SPEC_LINTED | `apis/openapi/payment-api.yaml` (OpenAPI 3.2.0) linted by Redocly in validate-contracts CI |
+| Contract conformance of API responses | UNIT_TESTED | `runtime/e2e/payment-api/tests/` validates every response body against the OpenAPI component schemas |
+| AsyncAPI/event contract | SPEC_LINTED | `apis/asyncapi/payment-events.yaml` validated by the official AsyncAPI parser in validate-contracts CI |
 | OAuth/OIDC/FAPI architecture | REFERENCE_DESIGN | `04-api-security/`, ADR-003, ADR-007 |
 | OWASP API Security architecture mapping | REFERENCE_DESIGN | `security/OWASP-API-Security-Top10-2023.md` |
 | HLD | REFERENCE_DESIGN | `architecture/HLD.md` |
 | LLD | IMPLEMENTATION_CONTRACT | `architecture/LLD.md` |
 | UML component/sequence/deployment | STATIC_VALIDATED | `diagrams/uml/` + architecture deliverables CI gate |
 | OpenShift Payment API manifest | STATIC_ASSET | `manifests/openshift/payment-api.yaml` |
-| Shared-platform CRC profile | CRC_RUNTIME_PROVEN_SHARED_PLATFORM_CONSUMER | observed OpenShift Local / CRC 4.22.7 execution |
+| Shared-platform CRC profile | CRC_RUNTIME_PROVEN_SHARED_PLATFORM_CONSUMER | observed OpenShift Local / CRC 4.22.7 execution on 2026-10-02; **replay pending** for the Payment API changes of 2026-11-02 |
 | Shared OIDC consumption on CRC | CRC_RUNTIME_PROVEN | `API_SHARED_OIDC_TOKEN=PASS` |
 | Kong → shared OTel traces on CRC | CRC_RUNTIME_PROVEN | `KONG_SHARED_OTEL_TRACE=PASS` |
 | Kong gateway runtime | CI_RUNTIME_PROVEN_E2E | run `36996509086` |
@@ -26,6 +27,13 @@
 | Rate limiting | CI_RUNTIME_PROVEN_E2E | HTTP 429 observed with reduced CI-only threshold |
 | Payment API via gateway | CI_RUNTIME_PROVEN_E2E | create/read through Kong |
 | Idempotency | CI_RUNTIME_PROVEN_E2E | deterministic replay observed |
+| Idempotency key reuse with different payload | __P0__ | HTTP 422 `idempotency_key_reused` (`PAYMENT_IDEMPOTENCY_KEY_REUSE_REJECTED`) |
+| Idempotency scoped per client application | UNIT_TESTED | same key from two clients → two payments |
+| Object-level authorization (OWASP API1 / BOLA) | __P0__ | other client with valid read scope → HTTP 404 (`PAYMENT_BOLA_OTHER_CLIENT_REJECTED`) |
+| Payload validation (schema + IBAN mod-97) | __P0__ | HTTP 422 on invalid checksum (`PAYMENT_IBAN_CHECKSUM_REJECTED`); field-level cases unit-tested |
+| Gateway client allow-list (one Kong consumer per `azp`) | __P0__ | valid token of a non-onboarded client → HTTP 401 (`KONG_UNREGISTERED_CLIENT_REJECTED`) |
+| Per-consumer rate limiting | __P0__ | throttled client does not throttle another (`KONG_RATE_LIMIT_PER_CONSUMER_ISOLATION`) |
+| Audience/scope validation at the gateway | NOT_IMPLEMENTED | Kong OSS `jwt` plugin does not support it; enforced by the resource server (LLD §7) |
 | Correlation ID | CI_RUNTIME_PROVEN_E2E | gateway response header observed |
 | Expired-token behavioral test | NOT_PROVEN | dedicated expiry case not yet executed |
 | Kafka runtime in this repo | NOT_PROVEN | LAB-09 pending |
@@ -35,9 +43,15 @@
 
 ## Primary runtime evidence
 
+- __P0_EVIDENCE__
+
 - `evidence/ci/API-MANAGEMENT-E2E-2026-10-02.md`
 - GitHub Actions run `36996509086` — SUCCESS
 - commit `7b9f7d7feb7297c1e50ad99992e4d03045173e86`
+
+## Known gaps (not claimed)
+
+Tracked in [00-roadmap/evolution-2026-2027.md](../00-roadmap/evolution-2026-2027.md#dette-technique-connue-hors-profils): Kong admin port reachable inside the CRC namespace, static realm key in the Kong configuration (no JWKS rotation), `curl -k` in CRC scripts, text-match OTel assertion, gateway errors not in `application/problem+json`, in-memory state.
 
 ## Portfolio linkage
 

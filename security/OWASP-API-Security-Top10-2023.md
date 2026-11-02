@@ -28,6 +28,19 @@
 - Is every exposed API inventoried with an owner and lifecycle?
 - Are downstream APIs treated as untrusted dependencies and validated?
 
+## Implemented in the lab fixture (`runtime/e2e/`)
+
+| OWASP risk | Implemented control | Test |
+|---|---|---|
+| API1 BOLA | payment owner = `azp` of the creating client; other clients receive 404 | CI marker `PAYMENT_BOLA_OTHER_CLIENT_REJECTED` + unit tests |
+| API2 Broken Authentication | gateway client allow-list (Kong consumer per `azp`), signature/expiry at gateway; issuer/audience at API | `KONG_UNREGISTERED_CLIENT_REJECTED`, `PAYMENT_WRONG_AUDIENCE_REJECTED`, `KONG_INVALID_SIGNATURE_REJECTED` |
+| API3 Property-level authorization | `additionalProperties: false` enforced on request; response limited to contract fields (owner never exposed) | unit tests (`unknown_fields`, schema validation of responses) |
+| API4 Resource consumption | 1 MiB payload limit, per-consumer rate limit | `KONG_REQUEST_SIZE_LIMIT`, `KONG_RATE_LIMIT_429`, `KONG_RATE_LIMIT_PER_CONSUMER_ISOLATION` |
+| API5 Function-level authorization | scope per operation (`payments.write` / `payments.read`) | `PAYMENT_INSUFFICIENT_SCOPE_REJECTED` |
+| API6 Sensitive business flows | idempotency per client bound to payload; IBAN checksum | `PAYMENT_IDEMPOTENCY_KEY_REUSE_REJECTED`, `PAYMENT_IBAN_CHECKSUM_REJECTED` |
+
+API7 to API10 remain design-level only. The proof status of each line is tracked in the [Claim / Evidence Matrix](../evidence/CLAIM-EVIDENCE-MATRIX.md).
+
 ## Evidence rule
 
 A checked architecture control means the design requires the control. It does not mean the implementation has passed a security test. Runtime and security-test evidence must be recorded separately.

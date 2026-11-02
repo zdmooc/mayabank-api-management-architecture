@@ -1,0 +1,9 @@
+# Specification-level lint for apis/openapi (replaces the unused .spectral.yaml).
+extends:
+  - recommended
+rules:
+  # The contract deliberately lists the local Kong lab endpoint next to the
+  # illustrative sandbox URL.
+  no-server-example.com: off
+  operation-4xx-response: error
+  security-defined: error

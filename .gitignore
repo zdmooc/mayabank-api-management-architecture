@@ -14,3 +14,7 @@ certs/private/
 *.key
 *.p12
 *.jks
+
+# Generated Kong declarative config (runtime/e2e)
+runtime/e2e/generated/
+.pytest_cache/

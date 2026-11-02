@@ -1,14 +1,13 @@
 _format_version: "3.0"
 _transform: true
 
+# One Kong consumer per registered OAuth2 client application.
+# The jwt plugin resolves the consumer from the `azp` claim (Keycloak client
+# id) and verifies the RS256 signature with the realm public key. A token from
+# a client that has not been onboarded at the gateway is rejected with 401.
+# Rendered by scripts/render-kong-config.sh from KONG_CLIENT_IDS.
 consumers:
-  - username: mayabank-keycloak
-    jwt_secrets:
-      - key: "__KEYCLOAK_ISSUER__"
-        algorithm: RS256
-        secret: "unused-for-rs256"
-        rsa_public_key: |-
-__KEYCLOAK_PUBLIC_KEY_INDENTED__
+__KONG_CONSUMERS__
 
 services:
   - name: payment-api
@@ -30,9 +29,12 @@ services:
           generator: uuid
           echo_downstream: true
 
+      # Counters are kept per consumer: one partner exhausting its budget does
+      # not throttle the others. `local` policy = per gateway node (lab only).
       - name: rate-limiting
         config:
           minute: __RATE_LIMIT_PER_MINUTE__
+          limit_by: consumer
           policy: local
 
       - name: request-size-limiting
@@ -42,6 +44,6 @@ services:
 
       - name: jwt
         config:
-          key_claim_name: iss
+          key_claim_name: azp
           claims_to_verify:
             - exp

@@ -2,7 +2,7 @@
 
 Ce dépôt évolue par **profils runtime successifs**, plutôt que par un nouveau dépôt. Chaque profil réutilise les mêmes contrats (`apis/`) et consomme la plateforme partagée (ADR-011). Il n'est déclaré prouvé qu'après exécution, avec des preuves dans `evidence/` et une ligne dans la [matrice](../evidence/CLAIM-EVIDENCE-MATRIX.md).
 
-Référence de départ : le tag `v1.0`, qui correspond à l'état du dépôt au 2026-10-23, avant cette feuille de route.
+Référence de départ : le commit `a791ae1` du 2026-10-23, état du dépôt avant cette feuille de route. Il est à étiqueter `v1.0` : `git tag -a v1.0 a791ae1 -m "v1.0" && git push origin v1.0`.
 
 ## Pourquoi ces priorités
 

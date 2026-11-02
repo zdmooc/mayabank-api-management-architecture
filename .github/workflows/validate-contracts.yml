@@ -25,6 +25,8 @@ jobs:
 
       - name: Lint OpenAPI (Redocly) and AsyncAPI (official parser)
         working-directory: tools/contract-lint
+        env:
+          REDOCLY_TELEMETRY: "off"
         run: |
           npm ci --no-audit --no-fund
           npm run lint

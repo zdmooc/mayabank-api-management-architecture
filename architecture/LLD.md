@@ -1,7 +1,7 @@
 # LLD — MayaBank API Management Reference Implementation
 
 **Classification:** REFERENCE_DESIGN / IMPLEMENTATION_CONTRACT  
-**Runtime status:** standalone CI = CI_RUNTIME_PROVEN_E2E; shared-platform CRC profile = IMPLEMENTED / STATIC_VALIDATED
+**Runtime status:** standalone CI = CI_RUNTIME_PROVEN_E2E; shared-platform CRC profile = CRC_RUNTIME_PROVEN_SHARED_PLATFORM_CONSUMER (2026-10-02, replay pending after 2026-11-02 changes)
 
 ## 1. Scope
 
@@ -56,10 +56,10 @@ Minimum fields: `eventId`, `paymentId`, `status`, `occurredAt`.
 1. Consumer resolves the public API endpoint.
 2. Edge/WAF applies perimeter controls.
 3. Gateway validates transport and schema/policy prerequisites.
-4. Gateway validates issuer, signature, expiry and audience; scope checks may be applied.
-5. Gateway forwards a controlled identity/security context.
-6. Payment API performs business/object authorization.
-7. For create, API validates idempotency and persists/reads command state.
+4. Gateway identifies the client application (`azp` → Kong consumer), rejects clients that are not onboarded, and validates signature and expiry. With Kong OSS the gateway does **not** validate audience or scope (see §7).
+5. Gateway applies per-consumer rate limits and forwards a controlled identity/security context.
+6. Payment API validates issuer, audience and scope, then performs business/object authorization (a payment is only visible to the client that created it).
+7. For create, API validates the payload against the contract and checks idempotency, scoped per client and bound to a payload fingerprint.
 8. Payment dependency is invoked.
 9. State change is emitted to the event platform.
 10. Correlation/tracing data is propagated across the chain.
@@ -89,6 +89,26 @@ Expected JWT checks:
 - no business authorization derived solely from possession of a valid token.
 
 The backend must enforce ownership/object/function rules.
+
+Placement of the checks in the reference implementation (`runtime/e2e/`):
+
+| Check | Gateway (Kong OSS 3.9 `jwt`) | Payment API |
+|---|---|---|
+| client application onboarded | yes — one consumer per `azp` | — |
+| signature (RS256) | yes | yes |
+| expiry | yes | yes |
+| issuer | indirect (realm key) | yes |
+| audience | **no** (not supported by the OSS plugin) | yes |
+| scope | no | yes |
+| object ownership (BOLA) | no | yes |
+| idempotency (client + payload) | no | yes |
+| payload schema / IBAN checksum | no | yes |
+| rate limit | yes — per consumer | — |
+| payload size | yes — 1 MiB | — |
+
+Moving audience/scope enforcement to the gateway requires an OIDC-capable policy (enterprise plugin or another product). It is a product decision, not assumed here.
+
+Known limitation: the realm public key is copied into the Kong configuration at render time. A Keycloak key rotation requires re-rendering the configuration; JWKS-based validation at the gateway is not implemented.
 
 ## 8. Network and trust
 
@@ -193,4 +213,4 @@ Runtime contract:
 - Keycloak runtime lifecycle remains specialist-owned;
 - OTel collector lifecycle remains shared-platform-owned.
 
-This profile is not promoted to CRC runtime evidence until the deployment and test scripts are observed successfully on the real CRC cluster.
+This profile was observed successfully on OpenShift Local / CRC 4.22.7 on 2026-10-02 (`CRC_RUNTIME_PROVEN_SHARED_PLATFORM_CONSUMER`, see `evidence/crc/`). That observation predates the Payment API hardening of 2026-11-02 (payload validation, BOLA, per-client idempotency): the CRC profile must be replayed before those controls can be claimed on CRC. The CRC Kong configuration still uses a single issuer-keyed consumer; per-client consumers are implemented in `runtime/e2e/` and `runtime/kind/` only. The hardened CRC manifest binds the Admin API to pod-local loopback, removes port 8001 from the Service and uses status 8100 for probes. Those changes are static-only until CRC is retested.

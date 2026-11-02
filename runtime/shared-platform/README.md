@@ -46,10 +46,21 @@ Keycloak Operator/PostgreSQL/Keycloak CR remain owned by `keycloak-enterprise-ro
 
 ```bash
 bash runtime/shared-platform/scripts/deploy-crc.sh
-bash runtime/shared-platform/scripts/test-crc.sh
+CRC_CA_BUNDLE=/path/to/your-trusted-crc-router-ca.pem \
+  bash runtime/shared-platform/scripts/test-crc.sh
 ```
 
 The deployment uses an OpenShift Binary BuildConfig for the Payment API, so no external placeholder application image is required.
+
+A CA PEM bundle trusted for both Keycloak and the OpenShift API Route is
+required for the hardened test. Verify the file is appropriate for this CRC
+instance. For a **local-only insecure diagnostic run**, explicitly set
+`CRC_ALLOW_INSECURE_TLS=true` instead of `CRC_CA_BUNDLE`; this must not be
+reported as a TLS-valid test.
+
+The hardened OTel check injects a fresh W3C `traceparent` and requires
+that exact trace ID in the collector logs. This revised script still requires
+a real CRC execution before new runtime claims.
 
 ## Expected proof markers
 

@@ -1,5 +1,0 @@
-extends: ["spectral:oas"]
-rules:
-  operation-description: warn
-  operation-tags: warn
-  info-contact: off

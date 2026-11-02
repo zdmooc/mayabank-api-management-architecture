@@ -33,7 +33,9 @@ spec:
             - name: KONG_PROXY_LISTEN
               value: 0.0.0.0:8000
             - name: KONG_ADMIN_LISTEN
-              value: 0.0.0.0:8001
+              value: 127.0.0.1:8001
+            - name: KONG_STATUS_LISTEN
+              value: 0.0.0.0:8100
             - name: KONG_TRACING_INSTRUMENTATIONS
               value: all
             - name: KONG_TRACING_SAMPLING_RATE
@@ -51,8 +53,8 @@ spec:
           ports:
             - name: proxy
               containerPort: 8000
-            - name: admin
-              containerPort: 8001
+            - name: status
+              containerPort: 8100
           volumeMounts:
             - name: kong-config
               mountPath: /kong/declarative
@@ -72,13 +74,13 @@ spec:
           readinessProbe:
             httpGet:
               path: /status
-              port: admin
+              port: status
             initialDelaySeconds: 8
             periodSeconds: 5
           livenessProbe:
             httpGet:
               path: /status
-              port: admin
+              port: status
             initialDelaySeconds: 20
             periodSeconds: 10
       volumes:
@@ -98,9 +100,6 @@ spec:
     - name: proxy
       port: 8000
       targetPort: proxy
-    - name: admin
-      port: 8001
-      targetPort: admin
 ---
 apiVersion: route.openshift.io/v1
 kind: Route

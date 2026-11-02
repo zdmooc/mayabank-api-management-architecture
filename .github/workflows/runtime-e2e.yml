@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - "runtime/e2e/**"
+      - "apis/openapi/**"
       - ".github/workflows/runtime-e2e.yml"
   pull_request:
     paths:
       - "runtime/e2e/**"
+      - "apis/openapi/**"
       - ".github/workflows/runtime-e2e.yml"
   workflow_dispatch:
 
@@ -29,16 +31,27 @@ jobs:
           CLIENT_VALUE="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
           READ_VALUE="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
           WRONG_AUD_VALUE="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+          UNREGISTERED_VALUE="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+          PARTNER_VALUE="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
           echo "::add-mask::$KC_VALUE"
           echo "::add-mask::$CLIENT_VALUE"
           echo "::add-mask::$READ_VALUE"
           echo "::add-mask::$WRONG_AUD_VALUE"
+          echo "::add-mask::$UNREGISTERED_VALUE"
+          echo "::add-mask::$PARTNER_VALUE"
           echo "KC_BOOTSTRAP_ADMIN_PASSWORD=$KC_VALUE" >> "$GITHUB_ENV"
           echo "PAYMENT_CLIENT_SECRET=$CLIENT_VALUE" >> "$GITHUB_ENV"
           echo "READ_ONLY_CLIENT_SECRET=$READ_VALUE" >> "$GITHUB_ENV"
           echo "WRONG_AUDIENCE_CLIENT_SECRET=$WRONG_AUD_VALUE" >> "$GITHUB_ENV"
+          echo "UNREGISTERED_CLIENT_SECRET=$UNREGISTERED_VALUE" >> "$GITHUB_ENV"
+          echo "PARTNER_CLIENT_SECRET=$PARTNER_VALUE" >> "$GITHUB_ENV"
           echo "RATE_LIMIT_PER_MINUTE=20" >> "$GITHUB_ENV"
-          unset KC_VALUE CLIENT_VALUE READ_VALUE WRONG_AUD_VALUE
+          unset KC_VALUE CLIENT_VALUE READ_VALUE WRONG_AUD_VALUE UNREGISTERED_VALUE PARTNER_VALUE
+
+      - name: Payment API unit and contract tests
+        run: |
+          python3 -m pip install -q -r runtime/e2e/payment-api/requirements-test.txt
+          python3 -m pytest -q runtime/e2e/payment-api/tests
 
       - name: Start Keycloak and Payment API
         run: docker compose -f runtime/e2e/docker-compose.yml up -d --build keycloak payment-api

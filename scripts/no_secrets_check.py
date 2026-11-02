@@ -18,10 +18,13 @@ RUNTIME_EXPRESSIONS = (
     "?set",
 )
 
+# Third-party and generated trees are not repository content.
+SKIPPED_DIRS = {".git", "node_modules", ".venv", "venv", "__pycache__", ".pytest_cache"}
+
 bad = []
 
 for p in Path(".").rglob("*"):
-    if not p.is_file() or ".git" in p.parts:
+    if not p.is_file() or SKIPPED_DIRS.intersection(p.parts):
         continue
     if p.suffix.lower() in {".png", ".jpg", ".jpeg", ".zip", ".pdf"}:
         continue

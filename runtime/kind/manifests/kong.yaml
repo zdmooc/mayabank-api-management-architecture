@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: kong, namespace: mayabank-api}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: kong}}
+  template:
+    metadata: {labels: {app: kong}}
+    spec:
+      containers:
+        - name: kong
+          image: kong:3.9.3
+          env:
+            - {name: KONG_DATABASE, value: "off"}
+            - {name: KONG_DECLARATIVE_CONFIG, value: "/kong/declarative/kong.yml"}
+            - {name: KONG_PROXY_LISTEN, value: "0.0.0.0:8000"}
+            - {name: KONG_ADMIN_LISTEN, value: "127.0.0.1:8001"}
+            - {name: KONG_STATUS_LISTEN, value: "0.0.0.0:8100"}
+            - {name: KONG_PROXY_ACCESS_LOG, value: "/dev/stdout"}
+            - {name: KONG_PROXY_ERROR_LOG, value: "/dev/stderr"}
+          ports:
+            - {name: proxy, containerPort: 8000}
+            - {name: status, containerPort: 8100}
+          volumeMounts:
+            - {name: kong-config, mountPath: /kong/declarative, readOnly: true}
+          startupProbe:
+            httpGet: {path: /status, port: status}
+            failureThreshold: 60
+            periodSeconds: 3
+          readinessProbe:
+            httpGet: {path: /status, port: status}
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: ["ALL"]}
+      volumes:
+        - name: kong-config
+          configMap: {name: kong-config}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: kong-proxy, namespace: mayabank-api}
+spec:
+  selector: {app: kong}
+  ports:
+    - {name: proxy, port: 8000, targetPort: proxy}

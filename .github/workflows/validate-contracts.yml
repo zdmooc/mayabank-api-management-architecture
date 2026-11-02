@@ -19,11 +19,27 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Validate OpenAPI
-        run: python scripts/validate_openapi.py apis/openapi/payment-api.yaml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
-      - name: Validate AsyncAPI
-        run: python scripts/validate_asyncapi.py apis/asyncapi/payment-events.yaml
+      - name: Lint OpenAPI (Redocly) and AsyncAPI (official parser)
+        working-directory: tools/contract-lint
+        env:
+          REDOCLY_TELEMETRY: "off"
+        run: |
+          npm ci --no-audit --no-fund
+          npm run lint
+
+      - name: Payment API unit and contract tests
+        run: |
+          pip install -r runtime/e2e/payment-api/requirements-test.txt
+          python -m pytest -q runtime/e2e/payment-api/tests
+
+      - name: Contract structure smoke checks
+        run: |
+          python scripts/validate_openapi.py apis/openapi/payment-api.yaml
+          python scripts/validate_asyncapi.py apis/asyncapi/payment-events.yaml
 
       - name: Secret hygiene
         run: python scripts/no_secrets_check.py
@@ -33,6 +49,33 @@ jobs:
         run: |
           set -euo pipefail
           bash -n runtime/shared-platform/scripts/*.sh
+          bash -n runtime/kind/run-kind.sh
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          core = list(yaml.safe_load_all(Path("runtime/kind/manifests/core.yaml").read_text()))
+          manifests = list(yaml.safe_load_all(Path("runtime/kind/manifests/kong.yaml").read_text()))
+          assert len(core) == 5
+          assert len(manifests) == 2
+          deployment, service = manifests
+          c = deployment["spec"]["template"]["spec"]["containers"][0]
+          env = {e["name"]: e["value"] for e in c["env"]}
+          assert env["KONG_ADMIN_LISTEN"] == "127.0.0.1:8001"
+          assert env["KONG_STATUS_LISTEN"] == "0.0.0.0:8100"
+          assert [p["port"] for p in service["spec"]["ports"]] == [8000]
+          print("KIND_ADMIN_PORT_POLICY_STATIC=PASS")
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          deployment, service, route = list(yaml.safe_load_all(Path("runtime/shared-platform/manifests/kong.yaml").read_text()))
+          c = deployment["spec"]["template"]["spec"]["containers"][0]
+          env = {e["name"]: e["value"] for e in c["env"]}
+          assert env["KONG_ADMIN_LISTEN"] == "127.0.0.1:8001"
+          assert env["KONG_STATUS_LISTEN"] == "0.0.0.0:8100"
+          assert [p["port"] for p in service["spec"]["ports"]] == [8000]
+          print("CRC_ADMIN_PORT_POLICY_STATIC=PASS")
+          PY
           python - <<'PY'
           from pathlib import Path
           import yaml
@@ -70,3 +113,6 @@ jobs:
           test -s diagrams/uml/sequence-payment-create.puml
           test -s diagrams/uml/deployment-openshift.puml
           test -s evidence/CLAIM-EVIDENCE-MATRIX.md
+          test -s evidence/ci/API-MANAGEMENT-E2E-2026-11-02.md
+          test -s 00-roadmap/evolution-2026-2027.md
+          test -s redocly.yaml

@@ -59,7 +59,7 @@ fi
 D090_AI_ACCESS_ENABLED=true KONG_CONFIG_OUTPUT_FILE="${RENDERED}"   bash runtime/shared-platform/scripts/render-kong-config.sh
 
 # Reach Kong Admin API without exposing it as an OpenShift Route.
-oc -n "${NAMESPACE}" port-forward svc/api-gateway "${ADMIN_LOCAL_PORT}:8001" >"${PF_LOG}" 2>&1 &
+oc -n "${NAMESPACE}" port-forward "deploy/${DEPLOY}" "${ADMIN_LOCAL_PORT}:8001" >"${PF_LOG}" 2>&1 &
 PF_PID="$!"
 
 ADMIN_READY=false

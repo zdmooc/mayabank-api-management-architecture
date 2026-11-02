@@ -20,6 +20,7 @@ import os
 import re
 import threading
 import uuid
+from decimal import Decimal, InvalidOperation
 from functools import wraps
 
 import jwt
@@ -45,6 +46,11 @@ AMOUNT_PATTERN = re.compile(r"^[0-9]+(\.[0-9]{1,2})?$")
 CURRENCY_PATTERN = re.compile(r"^[A-Z]{3}$")
 IBAN_PATTERN = re.compile(r"^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$")
 ACCOUNT_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+# Supported country lengths for this bounded banking lab, not a worldwide IBAN registry.
+IBAN_LENGTHS = {"FR": 27, "DE": 22, "GB": 22, "BE": 16, "NL": 18,
+                "ES": 24, "IT": 27, "CH": 21, "AT": 20, "LU": 20,
+                "PT": 25, "IE": 22, "PL": 28}
+SUPPORTED_CURRENCIES = {"EUR", "USD", "GBP", "CHF", "CAD", "JPY"}
 
 REQUEST_FIELDS = {"debtorAccountId", "creditorIban", "amount"}
 MONEY_FIELDS = {"value", "currency"}
@@ -132,22 +138,33 @@ def validate_payment_request(body) -> tuple[int, str, str] | None:
         return 400, "unknown_fields", "unknown: " + ", ".join(sorted(unknown))
 
     debtor = body["debtorAccountId"]
-    if not isinstance(debtor, str) or not ACCOUNT_ID_PATTERN.match(debtor):
+    if not isinstance(debtor, str) or not ACCOUNT_ID_PATTERN.fullmatch(debtor):
         return 400, "invalid_debtor_account", "debtorAccountId has an invalid format"
 
     amount = body["amount"]
     if not isinstance(amount, dict) or amount.keys() != MONEY_FIELDS:
         return 400, "invalid_amount", "amount must contain exactly value and currency"
-    if not isinstance(amount["value"], str) or not AMOUNT_PATTERN.match(amount["value"]):
+    if not isinstance(amount["value"], str) or not AMOUNT_PATTERN.fullmatch(amount["value"]):
         return 400, "invalid_amount", "amount.value must be a decimal string"
-    if not isinstance(amount["currency"], str) or not CURRENCY_PATTERN.match(amount["currency"]):
+    if not isinstance(amount["currency"], str) or not CURRENCY_PATTERN.fullmatch(amount["currency"]):
         return 400, "invalid_currency", "amount.currency must be an ISO 4217 code"
-    if float(amount["value"]) <= 0:
+    try:
+        value = Decimal(amount["value"])
+    except InvalidOperation:
+        return 400, "invalid_amount", "amount.value must be a valid decimal"
+    if not value.is_finite() or value <= 0:
         return 422, "invalid_amount", "amount.value must be greater than zero"
 
+    if amount["currency"] not in SUPPORTED_CURRENCIES:
+        return 422, "invalid_currency", "currency is not supported by this lab"
+
     iban = body["creditorIban"]
-    if not isinstance(iban, str) or not IBAN_PATTERN.match(iban):
+    if not isinstance(iban, str) or not IBAN_PATTERN.fullmatch(iban):
         return 400, "invalid_creditor_iban", "creditorIban has an invalid format"
+    # Format and modulo 97 alone do NOT guarantee the country's IBAN length.
+    expected_length = IBAN_LENGTHS.get(iban[:2])
+    if expected_length is None or len(iban) != expected_length:
+        return 400, "invalid_creditor_iban", "unsupported IBAN country or incorrect country length"
     if not iban_checksum_valid(iban):
         return 422, "invalid_creditor_iban", "creditorIban checksum is invalid"
 

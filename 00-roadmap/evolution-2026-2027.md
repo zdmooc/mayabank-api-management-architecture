@@ -31,15 +31,22 @@ Ces dates sont réglementaires et susceptibles d'évoluer : elles sont à revér
 | P6 | Fédération et choix de plateforme | Instruire une décision défendable | ADR de choix de plateforme avec critères pondérés et score, inventaire multi-gateway | ADR accepté avec les options rejetées et leurs raisons | À FAIRE |
 | P7 | Accès IA gouverné (MCP) | Étendre la gouvernance API aux agents | Route D-090 documentée comme consommateur, exposition MCP d'une API REST derrière la gateway | Accès agent authentifié, limité et tracé ; refus hors scope | EN COURS (D-090 opt-in) |
 
+## Portabilité Kubernetes Kind
+
+Profil dédié `runtime/kind/` pour Docker Desktop/WSL2 et CI. Il porte la
+chaîne Keycloak → Kong → Payment API avec des ressources Kubernetes natives,
+sans dépendance OpenShift. Le niveau de preuve Kind est défini par le workflow
+`mayabank-kind-e2e`, distinct du CRC historique.
+
 ## Dette technique connue (hors profils)
 
 | Sujet | Risque | Traitement prévu |
 |---|---|---|
 | Profil CRC : la Payment API a changé le 2026-11-02 | La preuve CRC du 2026-10-02 porte sur l'ancienne version | Rejouer `deploy-crc.sh` et `test-crc.sh` |
-| Profil CRC : port d'administration Kong (8001) exposé par le Service, sans NetworkPolicy | Reconfiguration de la gateway possible depuis le cluster | Port de statut séparé, admin limité à localhost, NetworkPolicy deny-by-default |
+| Profil CRC : Admin API Kong corrigée statiquement, non retestée | Port 8001 supprimé du Service, Admin limité à localhost, status 8100 | Rejouer sur CRC et ajouter NetworkPolicy deny-by-default |
 | Profil CRC : consumer unique, sélectionné par `iss` | Pas de quota ni de traçabilité par client sur CRC | Reporter les consumers par `azp` de `runtime/e2e` |
 | Clé publique du realm copiée dans la config Kong | Une rotation de clés côté Keycloak casse la gateway | Re-rendu automatisé ou validation JWKS (produit ou plugin) |
-| Scripts CRC en `curl -k` | Vérification TLS désactivée dans les tests | Utiliser la CA du routeur CRC |
-| Test OTel CRC : recherche de texte dans les logs du collector | Faux positif possible (traces d'un autre service) | Filtrer sur `service.name` ou sur un trace-id propagé |
+| Script CRC exige CA, avec opt-out explicite non sécurisé | Vérification TLS non encore exécutée après correction | Rejouer avec la CA du routeur CRC, sans opt-out |
+| Test OTel CRC utilise désormais un trace-id spécifique | Assertion modifiée mais non encore exécutée sur CRC | Exécuter avec la collecte réelle et enregistrer le trace-id observé |
 | Erreurs émises par Kong (401, 413, 429) | Pas au format `application/problem+json` du contrat | Personnaliser les erreurs de la gateway ou documenter l'écart |
 | Idempotence et paiements en mémoire | Perte au redémarrage, incohérence multi-réplicas | Hors périmètre du fixture : à traiter avec P4 (persistance) |

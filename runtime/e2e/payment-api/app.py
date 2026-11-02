@@ -152,7 +152,7 @@ def validate_payment_request(body) -> tuple[int, str, str] | None:
         value = Decimal(amount["value"])
     except InvalidOperation:
         return 400, "invalid_amount", "amount.value must be a valid decimal"
-    if not value.is_finite() or value <= 0:
+    if not value.is_finite() or not (Decimal('0') < value <= Decimal('1000000000')):
         return 422, "invalid_amount", "amount.value must be greater than zero"
 
     if amount["currency"] not in SUPPORTED_CURRENCIES:

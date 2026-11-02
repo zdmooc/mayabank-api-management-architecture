@@ -28,7 +28,7 @@
 | Payment API via gateway | CI_RUNTIME_PROVEN_E2E | create/read through Kong |
 | Idempotency | CI_RUNTIME_PROVEN_E2E | deterministic replay observed |
 | Idempotency key reuse with different payload | CI_RUNTIME_PROVEN_E2E | HTTP 422 `idempotency_key_reused` (`PAYMENT_IDEMPOTENCY_KEY_REUSE_REJECTED`) |
-| Idempotency scoped per client application | UNIT_TESTED | same key from two clients → two payments |
+| Idempotency scoped per client application | UNIT_TESTED and E2E proof pending consolidation | same key from two writers → different payment IDs |
 | Object-level authorization (OWASP API1 / BOLA) | CI_RUNTIME_PROVEN_E2E | other client with valid read scope → HTTP 404 (`PAYMENT_BOLA_OTHER_CLIENT_REJECTED`) |
 | Payload validation (schema + IBAN mod-97) | CI_RUNTIME_PROVEN_E2E | HTTP 422 on invalid checksum (`PAYMENT_IBAN_CHECKSUM_REJECTED`); field-level cases unit-tested |
 | Gateway client allow-list (one Kong consumer per `azp`) | CI_RUNTIME_PROVEN_E2E | valid token of a non-onboarded client → HTTP 401 (`KONG_UNREGISTERED_CLIENT_REJECTED`) |
@@ -51,7 +51,7 @@
 
 ## Known gaps (not claimed)
 
-Tracked in [00-roadmap/evolution-2026-2027.md](../00-roadmap/evolution-2026-2027.md#dette-technique-connue-hors-profils): Kong admin port reachable inside the CRC namespace, static realm key in the Kong configuration (no JWKS rotation), `curl -k` in CRC scripts, text-match OTel assertion, gateway errors not in `application/problem+json`, in-memory state.
+Tracked in [00-roadmap/evolution-2026-2027.md](../00-roadmap/evolution-2026-2027.md#dette-technique-connue-hors-profils): CRC Admin API network isolation is STATIC_IMPLEMENTED but not retested; Keycloak JWKS rotation is not proven; CRC test now requires a CA or an explicit insecure opt-out and asserts a trace ID (not runtime-proven); gateway errors differ from `application/problem+json`; state is in-memory.
 
 ## Portfolio linkage
 

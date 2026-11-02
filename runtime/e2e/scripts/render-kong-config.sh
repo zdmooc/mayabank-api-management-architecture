@@ -5,7 +5,7 @@ BASE_URL="${KEYCLOAK_EXTERNAL_URL:-http://localhost:8080}"
 RATE_LIMIT_PER_MINUTE="${RATE_LIMIT_PER_MINUTE:-120}"
 # Client applications onboarded at the gateway (one Kong consumer each).
 # `unregistered-client` exists in Keycloak but is deliberately NOT listed.
-KONG_CLIENT_IDS="${KONG_CLIENT_IDS:-payment-client read-only-client wrong-audience-client}"
+KONG_CLIENT_IDS="${KONG_CLIENT_IDS:-payment-client read-only-client wrong-audience-client partner-b-client}"
 
 REALM_JSON="$(curl -fsS "${BASE_URL}/realms/mayabank")"
 PUBLIC_KEY="$(REALM_JSON="${REALM_JSON}" python3 - <<'PY'

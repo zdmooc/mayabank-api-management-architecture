@@ -73,6 +73,25 @@ assert ports == [8000], f"Unexpected Kong Service ports: {ports}"
 '
 echo "KIND_KONG_ADMIN_SERVICE_ISOLATED=PASS"
 
+# Port-forward runs asynchronously. Wait until the proxy TCP connection is
+# actually serving a response; 401 from /health is acceptable (JWT plugin).
+PROXY_READY=false
+for _ in $(seq 1 60); do
+  if curl --silent --connect-timeout 2 --max-time 3 --output /dev/null \
+    "http://127.0.0.1:8000/health"; then
+    PROXY_READY=true
+    break
+  fi
+  sleep 1
+done
+if [[ "${PROXY_READY}" != "true" ]]; then
+  echo "KIND_KONG_PROXY_PORT_FORWARD=FAIL" >&2
+  cat /tmp/mayabank-kind-proxy-pf.log >&2 || true
+  exit 1
+fi
+echo "KIND_KONG_PROXY_PORT_FORWARD_READY=PASS"
+
+
 export KONG_PROXY_URL="http://localhost:8000"
 export KONG_ADMIN_URL="http://localhost:8001"
 bash runtime/e2e/scripts/test-e2e.sh

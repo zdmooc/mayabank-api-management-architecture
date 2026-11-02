@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - "runtime/e2e/**"
+      - "runtime/kind/**"
       - "apis/openapi/**"
       - ".github/workflows/runtime-e2e.yml"
   pull_request:
     paths:
       - "runtime/e2e/**"
+      - "runtime/kind/**"
       - "apis/openapi/**"
       - ".github/workflows/runtime-e2e.yml"
   workflow_dispatch:

@@ -10,7 +10,7 @@ Un lab passe à « EXÉCUTÉ » seulement quand il a été rejoué individuellem
 | LAB-04 OAuth/OIDC Keycloak | PARTIELLEMENT COUVERT | `client_credentials`, audience, scopes, rejets 401/403 en CI. Authorization Code + PKCE non couvert |
 | LAB-05 Policies | PARTIELLEMENT COUVERT | Correlation-ID, rate limit par consumer (429 + isolation), taille de payload (413), consumers par client en CI |
 | LAB-06 mTLS | À EXÉCUTER | — |
-| LAB-07 OpenShift | PARTIELLEMENT COUVERT | Profil shared-platform sur CRC 4.22.7 (2026-10-02). À rejouer après les changements du 2026-11-02 |
+| LAB-07 OpenShift | PARTIELLEMENT COUVERT | Profil CRC 4.22.7 démontré en octobre (ancienne version) ; profil Kind démontré en CI en novembre ; CRC durci à retester |
 | LAB-08 Observability | PARTIELLEMENT COUVERT | Traces Kong vers le collector OTel partagé sur CRC. Pas de SLO ni de métriques mesurées |
 | LAB-09 Kafka/AsyncAPI | À EXÉCUTER | Contrat AsyncAPI validé par le parser officiel, aucun runtime |
 | LAB-10 Resilience | À EXÉCUTER | — |

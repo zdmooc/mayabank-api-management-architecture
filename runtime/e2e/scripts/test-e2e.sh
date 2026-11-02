@@ -170,8 +170,10 @@ ISOLATION_CODE="$(http_code /tmp/isolation.json "${GW_URL}/payments/${PAYMENT_ID
 test "${ISOLATION_CODE}" = "404"
 echo "KONG_RATE_LIMIT_PER_CONSUMER_ISOLATION=PASS"
 
-LAST_CHAR="${TOKEN: -1}"
-if [[ "${LAST_CHAR}" == "A" ]]; then BAD_TOKEN="${TOKEN%?}B"; else BAD_TOKEN="${TOKEN%?}A"; fi
+# Alter the FIRST character of the signature segment: it carries 6 significant
+# bits, whereas the last base64url character may only differ in padding bits
+# (same decoded signature, so the token would still be valid).
+BAD_TOKEN="$(TOKEN="${TOKEN}" python3 -c 'import os; h,p,s=os.environ["TOKEN"].split("."); print(".".join([h,p,("B" if s[0]=="A" else "A")+s[1:]]))')"
 BAD_CODE="$(http_code /tmp/bad-token.json "${GW_URL}/payments/${PAYMENT_ID}" -H "Authorization: Bearer ${BAD_TOKEN}")"
 test "${BAD_CODE}" = "401"
 echo "KONG_INVALID_SIGNATURE_REJECTED=PASS"

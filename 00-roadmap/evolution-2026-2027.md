@@ -22,7 +22,7 @@ Ces dates sont réglementaires et susceptibles d'évoluer : elles sont à revér
 
 | # | Profil | Objectif | Livrables | Preuve attendue | Statut |
 |---|---|---|---|---|---|
-| P0 | Durcissement du socle | Aligner le code sur l'architecture déclarée | BOLA, idempotence par client et par payload, validation du contrat et de l'IBAN, consumer Kong par client, lint OpenAPI/AsyncAPI réel, tests de contrat | Marqueurs CI `PAYMENT_BOLA_OTHER_CLIENT_REJECTED`, `KONG_UNREGISTERED_CLIENT_REJECTED`, `KONG_RATE_LIMIT_PER_CONSUMER_ISOLATION`… | Voir la matrice |
+| P0 | Durcissement du socle | Aligner le code sur l'architecture déclarée | BOLA, idempotence par client et par payload, validation du contrat et de l'IBAN, consumer Kong par client, lint OpenAPI/AsyncAPI réel, tests de contrat | Marqueurs CI `PAYMENT_BOLA_OTHER_CLIENT_REJECTED`, `KONG_UNREGISTERED_CLIENT_REJECTED`, `KONG_RATE_LIMIT_PER_CONSUMER_ISOLATION`… | FAIT en CI (run `41436063790`) ; rejeu CRC à faire |
 | P1 | Performance et disponibilité (PSD3/PSR) | Mesurer et publier des SLI d'API | Test de charge via Kong, SLI p95 / taux d'erreur / disponibilité, rapport de performance périodique simulé | Résultats mesurés et versionnés, sans extrapolation vers la production | À FAIRE |
 | P2 | FAPI 2.0 baseline | Sécurité haute exposition | mTLS client, tokens liés à l'émetteur (mTLS ou DPoP), PAR, ADR-007 mis à jour | Scénarios nominaux et négatifs (token rejoué sans la preuve de possession → refusé) | À FAIRE |
 | P3 | API comme produit | Passer de la gateway à l'API Management | Catalogue et onboarding des consommateurs « as code », plans et quotas par consumer, cycle de dépréciation exercé | Onboarding d'un nouveau client sans modification manuelle de la gateway | À FAIRE |

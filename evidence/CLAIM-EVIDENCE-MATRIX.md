@@ -27,12 +27,12 @@
 | Rate limiting | CI_RUNTIME_PROVEN_E2E | HTTP 429 observed with reduced CI-only threshold |
 | Payment API via gateway | CI_RUNTIME_PROVEN_E2E | create/read through Kong |
 | Idempotency | CI_RUNTIME_PROVEN_E2E | deterministic replay observed |
-| Idempotency key reuse with different payload | __P0__ | HTTP 422 `idempotency_key_reused` (`PAYMENT_IDEMPOTENCY_KEY_REUSE_REJECTED`) |
+| Idempotency key reuse with different payload | CI_RUNTIME_PROVEN_E2E | HTTP 422 `idempotency_key_reused` (`PAYMENT_IDEMPOTENCY_KEY_REUSE_REJECTED`) |
 | Idempotency scoped per client application | UNIT_TESTED | same key from two clients → two payments |
-| Object-level authorization (OWASP API1 / BOLA) | __P0__ | other client with valid read scope → HTTP 404 (`PAYMENT_BOLA_OTHER_CLIENT_REJECTED`) |
-| Payload validation (schema + IBAN mod-97) | __P0__ | HTTP 422 on invalid checksum (`PAYMENT_IBAN_CHECKSUM_REJECTED`); field-level cases unit-tested |
-| Gateway client allow-list (one Kong consumer per `azp`) | __P0__ | valid token of a non-onboarded client → HTTP 401 (`KONG_UNREGISTERED_CLIENT_REJECTED`) |
-| Per-consumer rate limiting | __P0__ | throttled client does not throttle another (`KONG_RATE_LIMIT_PER_CONSUMER_ISOLATION`) |
+| Object-level authorization (OWASP API1 / BOLA) | CI_RUNTIME_PROVEN_E2E | other client with valid read scope → HTTP 404 (`PAYMENT_BOLA_OTHER_CLIENT_REJECTED`) |
+| Payload validation (schema + IBAN mod-97) | CI_RUNTIME_PROVEN_E2E | HTTP 422 on invalid checksum (`PAYMENT_IBAN_CHECKSUM_REJECTED`); field-level cases unit-tested |
+| Gateway client allow-list (one Kong consumer per `azp`) | CI_RUNTIME_PROVEN_E2E | valid token of a non-onboarded client → HTTP 401 (`KONG_UNREGISTERED_CLIENT_REJECTED`) |
+| Per-consumer rate limiting | CI_RUNTIME_PROVEN_E2E | throttled client does not throttle another (`KONG_RATE_LIMIT_PER_CONSUMER_ISOLATION`) |
 | Audience/scope validation at the gateway | NOT_IMPLEMENTED | Kong OSS `jwt` plugin does not support it; enforced by the resource server (LLD §7) |
 | Correlation ID | CI_RUNTIME_PROVEN_E2E | gateway response header observed |
 | Expired-token behavioral test | NOT_PROVEN | dedicated expiry case not yet executed |
@@ -43,7 +43,7 @@
 
 ## Primary runtime evidence
 
-- __P0_EVIDENCE__
+- `evidence/ci/API-MANAGEMENT-E2E-2026-11-02.md` — run `41436063790`, SUCCESS (P0 hardening: BOLA, idempotency reuse, IBAN, per-client consumers)
 
 - `evidence/ci/API-MANAGEMENT-E2E-2026-10-02.md`
 - GitHub Actions run `36996509086` — SUCCESS

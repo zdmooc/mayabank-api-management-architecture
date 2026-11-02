@@ -12,7 +12,7 @@ Positionnement visé : **Architecte Solution — API Management / Integration / 
 |---|---|---|
 | OAuth2 `client_credentials`, audience, scopes, rejets 401/403 | CI_RUNTIME_PROVEN_E2E | [preuve CI](evidence/ci/API-MANAGEMENT-E2E-2026-10-02.md) |
 | Rate limit (429), taille de payload (413), correlation-ID, idempotence | CI_RUNTIME_PROVEN_E2E | [preuve CI](evidence/ci/API-MANAGEMENT-E2E-2026-10-02.md) |
-| BOLA, idempotence par client et par payload, validation IBAN, consumer Kong par client, isolation du rate limit | __P0_LEVEL__ | __P0_LINK__ |
+| BOLA, idempotence par client et par payload, validation IBAN, consumer Kong par client, isolation du rate limit | CI_RUNTIME_PROVEN_E2E | [preuve CI](evidence/ci/API-MANAGEMENT-E2E-2026-11-02.md) |
 | Consommation OIDC et OTel partagés sur OpenShift Local 4.22.7 | CRC_RUNTIME_PROVEN | [preuve CRC](evidence/crc/API-MANAGEMENT-SHARED-PLATFORM-CRC-2026-10-02.md) |
 | Contrats OpenAPI 3.2.0 / AsyncAPI 3.1.0 lintés, réponses validées contre le contrat | SPEC_LINTED / UNIT_TESTED | [validate-contracts](.github/workflows/validate-contracts.yml) |
 

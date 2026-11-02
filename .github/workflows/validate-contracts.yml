@@ -86,5 +86,6 @@ jobs:
           test -s diagrams/uml/sequence-payment-create.puml
           test -s diagrams/uml/deployment-openshift.puml
           test -s evidence/CLAIM-EVIDENCE-MATRIX.md
+          test -s evidence/ci/API-MANAGEMENT-E2E-2026-11-02.md
           test -s 00-roadmap/evolution-2026-2027.md
           test -s redocly.yaml

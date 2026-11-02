@@ -6,6 +6,7 @@ set -euo pipefail
 : "${READ_ONLY_CLIENT_SECRET:?set READ_ONLY_CLIENT_SECRET}"
 : "${WRONG_AUDIENCE_CLIENT_SECRET:?set WRONG_AUDIENCE_CLIENT_SECRET}"
 : "${UNREGISTERED_CLIENT_SECRET:?set UNREGISTERED_CLIENT_SECRET}"
+: "${PARTNER_CLIENT_SECRET:?set PARTNER_CLIENT_SECRET}"
 
 BASE_URL="${KEYCLOAK_EXTERNAL_URL:-http://localhost:8080}"
 
@@ -181,6 +182,32 @@ admin_json POST "/admin/realms/mayabank/clients/${UNREGISTERED_UUID}/protocol-ma
   "config":{"included.client.audience":"payment-api","access.token.claim":"true"}
 }'
 
-rm -f /tmp/payment-client.json /tmp/read-only-client.json /tmp/wrong-audience-client.json /tmp/unregistered-client.json
+
+# Second full-scope writer client, used to prove tenant isolation for the
+# same idempotency key (not merely an unauthorized read-only client).
+PARTNER_SECRET="${PARTNER_CLIENT_SECRET}" python3 - <<'PY' >/tmp/partner-client.json
+import json,os
+print(json.dumps({"clientId":"partner-b-client","enabled":True,"protocol":"openid-connect",
+ "publicClient":False,"secret":os.environ["PARTNER_SECRET"],
+ "serviceAccountsEnabled":True,"fullScopeAllowed":False,
+ "standardFlowEnabled":False,"directAccessGrantsEnabled":False}))
+PY
+admin_json POST /admin/realms/mayabank/clients "$(cat /tmp/partner-client.json)"
+PARTNER_UUID="$(admin_get '/admin/realms/mayabank/clients?clientId=partner-b-client' | jq -r '.[0].id')"
+test -n "${PARTNER_UUID}" && test "${PARTNER_UUID}" != "null"
+for scope in payments.write payments.read; do
+  SCOPE_ID="$(admin_get '/admin/realms/mayabank/client-scopes' | jq -r --arg n "${scope}" '.[] | select(.name == $n) | .id')"
+  code="$(curl -sS -o /tmp/partner-scope-link.out -w '%{http_code}' -X PUT \
+    "${BASE_URL}/admin/realms/mayabank/clients/${PARTNER_UUID}/default-client-scopes/${SCOPE_ID}" \
+    -H "Authorization: Bearer ${ADMIN_TOKEN}")"
+  test "${code}" = "204"
+done
+admin_json POST "/admin/realms/mayabank/clients/${PARTNER_UUID}/protocol-mappers/models" '{
+ "name":"payment-api-audience","protocol":"openid-connect",
+ "protocolMapper":"oidc-audience-mapper",
+ "config":{"included.client.audience":"payment-api","access.token.claim":"true"}
+}'
+
+rm -f /tmp/partner-client.json /tmp/payment-client.json /tmp/read-only-client.json /tmp/wrong-audience-client.json /tmp/unregistered-client.json
 unset ADMIN_TOKEN
 echo "KEYCLOAK_E2E_BOOTSTRAP=PASS"

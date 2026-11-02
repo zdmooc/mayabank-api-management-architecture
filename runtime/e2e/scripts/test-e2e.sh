@@ -5,6 +5,7 @@ set -euo pipefail
 : "${READ_ONLY_CLIENT_SECRET:?set READ_ONLY_CLIENT_SECRET}"
 : "${WRONG_AUDIENCE_CLIENT_SECRET:?set WRONG_AUDIENCE_CLIENT_SECRET}"
 : "${UNREGISTERED_CLIENT_SECRET:?set UNREGISTERED_CLIENT_SECRET}"
+: "${PARTNER_CLIENT_SECRET:?set PARTNER_CLIENT_SECRET}"
 
 KC_URL="${KEYCLOAK_EXTERNAL_URL:-http://localhost:8080}"
 GW_URL="${KONG_PROXY_URL:-http://localhost:8000}"
@@ -102,6 +103,21 @@ test "${MISMATCH_CODE}" = "422"
 jq -e '.code == "idempotency_key_reused"' /tmp/idem-mismatch.json >/dev/null
 echo "PAYMENT_IDEMPOTENCY_KEY_REUSE_REJECTED=PASS"
 
+# Cross-client creation with SAME idempotency key, and mutual read isolation.
+PARTNER_TOKEN="$(get_token partner-b-client "${PARTNER_CLIENT_SECRET}")"
+curl -fsS -o /tmp/partner-create.json -X POST "${GW_URL}/payments" \
+  -H "Authorization: Bearer ${PARTNER_TOKEN}" -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: ${IDEM}" --data "${PAYLOAD}"
+PARTNER_PAYMENT_ID="$(jq -r '.paymentId' /tmp/partner-create.json)"
+test -n "${PARTNER_PAYMENT_ID}" && test "${PARTNER_PAYMENT_ID}" != "null"
+test "${PARTNER_PAYMENT_ID}" != "${PAYMENT_ID}"
+OTHER_READ_CODE="$(http_code /tmp/partner-bola.json "${GW_URL}/payments/${PAYMENT_ID}" -H "Authorization: Bearer ${PARTNER_TOKEN}")"
+SELF_READ_CODE="$(http_code /tmp/owner-bola.json "${GW_URL}/payments/${PARTNER_PAYMENT_ID}" -H "Authorization: Bearer ${TOKEN}")"
+test "${OTHER_READ_CODE}" = "404"
+test "${SELF_READ_CODE}" = "404"
+echo "PAYMENT_TWO_WRITERS_ISOLATED=PASS"
+
+
 BAD_IBAN_CODE="$(http_code /tmp/bad-iban.json -X POST "${GW_URL}/payments" \
   -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
   -H 'Idempotency-Key: e2e-bad-iban-0001' --data "${PAYLOAD_BAD_IBAN}")"
@@ -178,5 +194,5 @@ BAD_CODE="$(http_code /tmp/bad-token.json "${GW_URL}/payments/${PAYMENT_ID}" -H 
 test "${BAD_CODE}" = "401"
 echo "KONG_INVALID_SIGNATURE_REJECTED=PASS"
 
-unset TOKEN READ_ONLY_TOKEN WRONG_AUD_TOKEN UNREGISTERED_TOKEN
+unset TOKEN READ_ONLY_TOKEN WRONG_AUD_TOKEN UNREGISTERED_TOKEN PARTNER_TOKEN
 echo "API_MANAGEMENT_E2E_RUNTIME=PASS"

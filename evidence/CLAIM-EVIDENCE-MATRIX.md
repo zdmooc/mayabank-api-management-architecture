@@ -28,7 +28,7 @@
 | Payment API via gateway | CI_RUNTIME_PROVEN_E2E | create/read through Kong |
 | Idempotency | CI_RUNTIME_PROVEN_E2E | deterministic replay observed |
 | Idempotency key reuse with different payload | CI_RUNTIME_PROVEN_E2E | HTTP 422 `idempotency_key_reused` (`PAYMENT_IDEMPOTENCY_KEY_REUSE_REJECTED`) |
-| Idempotency scoped per client application | UNIT_TESTED and E2E proof pending consolidation | same key from two writers → different payment IDs |
+| Idempotency scoped per client application | CI_KIND_RUNTIME_PROVEN_E2E | Deux clients écrivains, même clé, IDs distincts ; Kind run 41444307927 |
 | Object-level authorization (OWASP API1 / BOLA) | CI_RUNTIME_PROVEN_E2E | other client with valid read scope → HTTP 404 (`PAYMENT_BOLA_OTHER_CLIENT_REJECTED`) |
 | Payload validation (schema + IBAN mod-97) | CI_RUNTIME_PROVEN_E2E | HTTP 422 on invalid checksum (`PAYMENT_IBAN_CHECKSUM_REJECTED`); field-level cases unit-tested |
 | Gateway client allow-list (one Kong consumer per `azp`) | CI_RUNTIME_PROVEN_E2E | valid token of a non-onboarded client → HTTP 401 (`KONG_UNREGISTERED_CLIENT_REJECTED`) |
@@ -38,6 +38,7 @@
 | Expired-token behavioral test | NOT_PROVEN | dedicated expiry case not yet executed |
 | Kafka runtime in this repo | NOT_PROVEN | LAB-09 pending |
 | OpenShift runtime | CRC_RUNTIME_PROVEN_SHARED_PLATFORM_CONSUMER | shared-platform profile executed successfully on CRC 4.22.7 |
+| Kubernetes Kind E2E — PR #5 | CI_KIND_RUNTIME_PROVEN_E2E | [Preuve CI Kind](ci/API-MANAGEMENT-KIND-E2E-2026-11-02.md), run 41444307927 (commit ef98c0f) |
 | Full target architecture E2E | NOT_PROVEN | Kafka/OpenShift/HA not included in current CI proof |
 | Production readiness | NOT_CLAIMED | — |
 

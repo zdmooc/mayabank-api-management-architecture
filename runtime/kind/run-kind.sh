@@ -49,6 +49,7 @@ PF_PIDS+=("$!")
 export KEYCLOAK_EXTERNAL_URL="http://localhost:8080"
 bash runtime/e2e/scripts/bootstrap-keycloak.sh
 
+export RATE_LIMIT_PER_MINUTE="${RATE_LIMIT_PER_MINUTE:-20}"
 export KONG_CLIENT_IDS="payment-client read-only-client wrong-audience-client partner-b-client"
 bash runtime/e2e/scripts/render-kong-config.sh
 kubectl -n "${NS}" create configmap kong-config \

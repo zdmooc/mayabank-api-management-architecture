@@ -49,6 +49,33 @@ jobs:
         run: |
           set -euo pipefail
           bash -n runtime/shared-platform/scripts/*.sh
+          bash -n runtime/kind/run-kind.sh
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          core = list(yaml.safe_load_all(Path("runtime/kind/manifests/core.yaml").read_text()))
+          manifests = list(yaml.safe_load_all(Path("runtime/kind/manifests/kong.yaml").read_text()))
+          assert len(core) == 5
+          assert len(manifests) == 2
+          deployment, service = manifests
+          c = deployment["spec"]["template"]["spec"]["containers"][0]
+          env = {e["name"]: e["value"] for e in c["env"]}
+          assert env["KONG_ADMIN_LISTEN"] == "127.0.0.1:8001"
+          assert env["KONG_STATUS_LISTEN"] == "0.0.0.0:8100"
+          assert [p["port"] for p in service["spec"]["ports"]] == [8000]
+          print("KIND_ADMIN_PORT_POLICY_STATIC=PASS")
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          deployment, service, route = list(yaml.safe_load_all(Path("runtime/shared-platform/manifests/kong.yaml").read_text()))
+          c = deployment["spec"]["template"]["spec"]["containers"][0]
+          env = {e["name"]: e["value"] for e in c["env"]}
+          assert env["KONG_ADMIN_LISTEN"] == "127.0.0.1:8001"
+          assert env["KONG_STATUS_LISTEN"] == "0.0.0.0:8100"
+          assert [p["port"] for p in service["spec"]["ports"]] == [8000]
+          print("CRC_ADMIN_PORT_POLICY_STATIC=PASS")
+          PY
           python - <<'PY'
           from pathlib import Path
           import yaml

@@ -1,6 +1,6 @@
 # ADR-012 — OAuth client isolation, Kong Admin API and JWT key lifecycle
 
-**Status:** Proposed in hardening PR; not a production architecture approval.
+**Status:** Accepted for the bounded lab only; key rotation/CRC runtime remain unproven.
 **Scope:** Kong 3.9.3 OSS / Keycloak 26.8.0 / ephemeral Payment API demo.
 
 ## Decision drivers
@@ -15,7 +15,7 @@
 | Concern | Options evaluated | Decision for bounded lab | Production gap |
 |---|---|---|---|
 | Payment ownership | Gateway scope only; application `azp`; tenant/user ACL | Enforce signed JWT `azp` ownership at resource server, return 404 for cross-client reads | Model tenant and delegated users explicitly (JWT `sub` plus tenant claim) |
-| Idempotency | Global key; client+operation+key; distributed DB | Client+operation+key, SHA-256 of canonical payload, 409 on mismatch, process lock | Persist transactionally with unique constraint, TTL and concurrency protection |
+| Idempotency | Global key; client+operation+key; distributed DB | Client+key for the POST /payments operation, SHA-256 of canonical payload, 422 on mismatch, process lock | Persist transactionally with unique constraint, TTL and concurrency protection |
 | Kong client identity | Single `iss` consumer; signed `azp` per consumer; enterprise OIDC plugin | Known E2E clients map to `azp` JWT consumers; local per-consumer rate limiting | Multi-pod distributed quotas; client onboarding and token compatibility |
 | Admin API | Service 8001; localhost-only; external ACL | CRC Admin API binds to pod loopback; status port 8100 used for probes; no Admin Service endpoint | Access audit, RBAC, NetworkPolicy and CRC runtime retest |
 | Signing key rotation | Static RSA key; rerender/redeploy; dynamic JWKS/OIDC | Static RS256 realm key is still rendered from Keycloak at startup | Rotation currently not automatically reconciled; overlap of old/new keys NOT PROVEN |
@@ -38,7 +38,7 @@ rollback, alerting, client onboarding, token lifetime, and availability.
 - CI: two independently authenticated writer clients can reuse identical
   idempotency keys without sharing payment IDs.
 - CI: both cross-client GET directions return 404.
-- CI: changed payload with identical client/key returns 409.
+- CI: changed payload with identical client/key returns 422.
 - CI: one client's exhausted rate limit does not yield 429 for another.
 - Static: CRC manifest has `KONG_ADMIN_LISTEN=127.0.0.1:8001`,
   `KONG_STATUS_LISTEN=0.0.0.0:8100`, and no Admin Service endpoint.

@@ -71,6 +71,17 @@ flowchart TD
   GOV[API Governance] --> REG
 ```
 
+## Exécuter sur Docker Desktop + Kind
+
+Un profil Kubernetes natif est disponible dans [runtime/kind](runtime/kind/README.md).
+Il réutilise la Payment API, Keycloak et les tests E2E Kong sans avoir besoin
+d'installer OpenShift CRC. **Une validation sur Kind ne prouve pas le profil CRC.**
+
+```bash
+kind create cluster --name mayabank-api
+bash runtime/kind/run-kind.sh
+```
+
 ## Exécuter
 
 ```bash
